@@ -1,0 +1,856 @@
+#include "basics.hpp"
+
+class sortAlgo {
+public:
+    virtual void sort(myContainer&) = 0;
+    virtual ~sortAlgo() {}
+};
+
+static const std::string algoDescription[] = 
+{
+    "std::sort",
+    "std::stable_sort",
+    "Timsort",
+    "PDQ-sort",
+    "Insertion sort",
+    "Selection sort",
+    "Bubble sort",
+    "Cocktail sort",
+    "Gnome sort",
+    "Comb sort",
+    "Merge sort",
+    "Heap sort",
+    "Smooth sort",
+    "Shell sort",
+    "Bitonic sort",
+    "Quick sort (LR, pivot=first)",
+    "Quick sort (LR, pivot=last)",
+    "Quick sort (LR, pivot=middle)",
+    "Quick sort (LR, pivot=median of 3)",
+    "Quick sort (LR, pivot=median of 9)",
+    "Quick sort (LR, pivot=random)",
+    "Quick sort (LL, pivot=first)",
+    "Quick sort (LL, pivot=last)",
+    "Quick sort (LL, pivot=middle)",
+    "Quick sort (LL, pivot=median of 3)",
+    "Quick sort (LL, pivot=median of 9)",
+    "Quick sort (LL, pivot=random)"
+};
+
+namespace nlognalgos {
+class pivotSelection {
+public:
+    virtual int selectPivot(myContainer&, int, int) = 0;
+    virtual ~pivotSelection() {}
+};
+
+class firstPivot : public pivotSelection {
+public:
+    int selectPivot(myContainer&, int low, int) override {
+        return low;
+    }
+};
+class lastPivot : public pivotSelection {
+public:
+    int selectPivot(myContainer&, int, int high) override {
+        return high - 1;
+    }
+};
+class middlePivot : public pivotSelection {
+public:
+    int selectPivot(myContainer&, int low, int high) override {
+        return low + (high - low) / 2;
+    }
+};
+class medianOfThreePivot : public pivotSelection {
+    static int median3(myContainer& arr, int a, int b, int c) {
+        if (arr[a] > arr[b]) std::swap(arr[a], arr[b]);
+        if (arr[a] > arr[c]) std::swap(arr[a], arr[c]);
+        if (arr[b] > arr[c]) std::swap(arr[b], arr[c]);
+        return b;
+    }
+public:
+    int selectPivot(myContainer& arr, int low, int high) override {
+        int mid = low + (high - low) / 2;
+        return median3(arr, low, mid, high - 1);
+    }
+};
+class medianOfNinePivot : public pivotSelection {
+    static void sort3(myContainer& arr, int a, int b, int c) {
+        if (arr[a] > arr[b]) std::swap(arr[a], arr[b]);
+        if (arr[a] > arr[c]) std::swap(arr[a], arr[c]);
+        if (arr[b] > arr[c]) std::swap(arr[b], arr[c]);
+    }
+public:
+    int selectPivot(myContainer& arr, int begin, int end) override {
+        int s2 = (end - begin) / 2;
+        sort3(arr, begin, begin + s2, end - 1);
+        sort3(arr, begin + 1, begin + (s2 - 1), end - 2);
+        sort3(arr, begin + 2, begin + (s2 + 1), end - 3);
+        sort3(arr, begin + (s2 - 1), begin + s2, begin + (s2 + 1));
+        return begin + s2;
+    }
+};
+class randomPivot : public pivotSelection {
+public:
+    int selectPivot(myContainer&, int low, int high) override {
+        return low + rand() % (high - low - 1);
+    }
+};
+}
+
+namespace stlalgos {
+class STLSort : public sortAlgo {
+public:
+    void sort(myContainer& indices) override {
+        std::sort(indices.begin(), indices.end());
+    }
+};
+
+class STLStableSort : public sortAlgo {
+public:
+    void sort(myContainer& indices) override {
+        std::stable_sort(indices.begin(), indices.end());
+    }
+};
+}
+
+namespace hybridalgos {
+
+class timSort : public sortAlgo {
+    static void mergeBackwards(myContainer& arr, int l, int m, int r) {
+        myContainer rightArr(arr.begin() + m, arr.begin() + r);
+        int i = m - 1, j = r - m - 1, k = r - 1;
+        while (i >= l && j >= 0) {
+            if (rightArr[j] >= arr[i]) {
+                arr[k--] = rightArr[j--];
+            } else {
+                arr[k--] = arr[i--];
+            }
+        }
+        if (j != -1) std::copy_backward(rightArr.begin(), rightArr.begin() + j + 1, arr.begin() + k + 1);
+    }
+
+    static void merge(myContainer& arr, int l, int m, int r) {
+        if (r - m < m - l) {
+            mergeBackwards(arr, l, m, r);
+            return;
+        }
+        myContainer leftArr(arr.begin() + l, arr.begin() + m);
+        int i = 0, j = m, k = l;
+        int leftSize = leftArr.size();
+        while (i < leftSize && j < r) {
+            if (leftArr[i] <= arr[j]) {
+                arr[k++] = leftArr[i++];
+            } else {
+                arr[k++] = arr[j++];
+            }
+        }
+        if (i != leftSize) std::copy(leftArr.begin() + i, leftArr.end(), arr.begin() + k);
+    }
+public:
+    void sort(myContainer& indices) override {
+        int n = indices.size();
+        std::vector<std::pair<int, int>> runStack;
+        int minRun = n / (1 << (int)std::log2(n / 32));
+        auto detectRun = [&](int start) -> int {
+            if (start + 1 >= n) return start;
+            if (indices[start] <=  indices[start + 1]) {
+                int end = start + 1;
+                while (end + 1 < n && indices[end] <= indices[end + 1]) end++;
+                return end;
+            } else {
+                int end = start + 1;
+                while (end + 1 < n && indices[end] >= indices[end + 1]) end++;
+                int i = start, j = end;
+                while (i < j) {
+                    std::swap(indices[i], indices[j]);
+                    i++; j--;
+                }
+                return end;
+            }
+        };
+        auto insertionSort = [&](int left, int right) {
+            for (int i = left + 1; i <= right; i++) {
+                myElement temp = indices[i];
+                int j = i - 1;
+                while (j >= left && indices[j] > temp) {
+                    indices[j + 1] = indices[j];
+                    j--;
+                }
+                indices[j + 1] = temp;
+            }
+        };
+        for (int i = 0; i < n;) {
+            int runEnd = detectRun(i);
+            int runLength = runEnd - i + 1;
+
+            if (runLength < minRun) {
+                int forceEnd = std::min(i + minRun - 1, n - 1);
+                insertionSort(i, forceEnd);
+                runStack.push_back({i, forceEnd});
+                i = forceEnd + 1;
+            } else {
+                runStack.push_back({i, runEnd});
+                i = runEnd + 1;
+            }
+            while (true) {
+                bool conditionSatisfied = true;
+                int m = runStack.size();
+
+                if (m >= 3) {
+                    auto &A = runStack[m - 3];
+                    auto &B = runStack[m - 2];
+                    auto &C = runStack[m - 1];
+                    if (A.second - A.first < (B.second - B.first + C.second - C.first)) {
+                        conditionSatisfied = false;
+                        if (A.second - A.first < C.second - C.first) {
+                            merge(indices, A.first, B.first, B.second + 1);
+                            runStack[m - 3] = {A.first, B.second};
+                            runStack[m - 2] = C;
+                            runStack.pop_back();
+                        } else {
+                            merge(indices, B.first, C.first, C.second + 1);
+                            runStack[m - 3] = A;
+                            runStack[m - 2] = {B.first, C.second};
+                            runStack.pop_back();
+                        }
+                        continue;
+                    }
+                }
+                m = runStack.size();
+                if (m >= 2) {
+                    auto &A = runStack[m - 2];
+                    auto &B = runStack[m - 1];
+                    if (A.second - A.first < (B.second - B.first)) {
+                        conditionSatisfied = false;
+                        merge(indices, A.first, B.first, B.second + 1);
+                        runStack[m - 2] = {A.first, B.second};
+                        runStack.pop_back();
+                        continue;
+                    }
+                }
+
+                if (conditionSatisfied) break;
+            }
+        }
+        while (runStack.size() > 1) {
+            int m = runStack.size();
+            auto &A = runStack[m - 2];
+            auto &B = runStack[m - 1];
+            merge(indices, A.first, B.first, B.second + 1);
+            runStack[m - 2] = {A.first, B.second};
+            runStack.pop_back();
+        }
+    }
+};
+
+class pdqSort : public sortAlgo {
+public:
+
+    void sort(myContainer& arr) override {
+        int n = arr.size();
+        sortRecursive(arr, 0, n, floor(log2(n)));
+    }
+
+private:
+    static void insertionSort(myContainer& arr, int left, int right) {
+        for (int i = left + 1; i <= right; i++) {
+            myElement temp = arr[i];
+            int j = i - 1;
+            while (j >= left && arr[j] > temp) {
+                arr[j + 1] = arr[j];
+                j--;
+            }
+            arr[j + 1] = temp;
+        }
+    }
+
+    static void mergeBackwards(myContainer& arr, int l, int m, int r) {
+        if (m == l || m == r) return;
+        myContainer rightArr(arr.begin() + m, arr.begin() + r);
+        int i = m - 1, j = r - m - 1, k = r - 1;
+        while (i >= l && j >= 0) {
+            if (rightArr[j] >= arr[i]) {
+                arr[k--] = rightArr[j--];
+            } else {
+                arr[k--] = arr[i--];
+            }
+        }
+        if (j != -1) std::copy_backward(rightArr.begin(), rightArr.begin() + j + 1, arr.begin() + k + 1);
+    }
+
+    static void merge(myContainer& arr, int l, int m, int r) {
+        if (m == l || m == r) return;
+        if (r - m < m - l) {
+            mergeBackwards(arr, l, m, r);
+            return;
+        }
+        myContainer leftArr(arr.begin() + l, arr.begin() + m);
+        int i = 0, j = m, k = l;
+        int leftSize = leftArr.size();
+        while (i < leftSize && j < r) {
+            if (leftArr[i] <= arr[j]) {
+                arr[k++] = leftArr[i++];
+            } else {
+                arr[k++] = arr[j++];
+            }
+        }
+        if (i != leftSize) std::copy(leftArr.begin() + i, leftArr.end(), arr.begin() + k);
+    }
+    static std::pair<int,int> partition(myContainer& arr, int low, int high) {
+        int swapCount = 0, p;
+        if (high - low >= 128) {
+            p = ::nlognalgos::medianOfNinePivot().selectPivot(arr, low, high);
+        }
+        else p = ::nlognalgos::medianOfThreePivot().selectPivot(arr, low, high);
+        myElement pivot = arr[p];
+        int i = low;
+        int j = high - 1;
+
+        while (i <= j) {
+            while (i <= j && arr[i] <= pivot) i++;
+            while (i <= j && arr[j] >= pivot) j--;
+            if (i <= j) {
+                std::swap(arr[i], arr[j]);
+                swapCount++;
+                if (p == i) p = j;
+                else if (p == j) p = i;
+                i++;
+                j--;
+            }
+        }
+        return {j, swapCount};
+    }
+
+    static int detectRun(myContainer& arr, int start, int n) {
+        if (arr[start] <= arr[start + 1]) {
+            int end = start + 1;
+            while (end + 1 < n && arr[end] <= arr[end + 1]) end++;
+            return end;
+        } else {
+            int end = start + 1;
+            while (end + 1 < n && arr[end] >= arr[end + 1]) end++;
+            std::reverse(arr.begin() + start, arr.begin() + end + 1);
+            return end;
+        }
+    }
+
+    static int detectRunBackwards(myContainer& arr, int end, int start) {
+        if (arr[end - 1] >= arr[end]) {
+            int pos = end - 1;
+            while (pos > start && arr[pos - 1] >= arr[pos]) pos--;
+            std::reverse(arr.begin() + pos, arr.begin() + end + 1);
+            return pos;
+        }
+        else {
+            int pos = end - 1;
+            while (pos > start && arr[pos - 1] <= arr[pos]) pos--;
+            return pos;
+        }
+    }
+
+    static void sortRecursive(myContainer& arr, int low, int high, int badAllowed) {
+        if (high - low <= 32) {
+            insertionSort(arr, low, high - 1);
+            return;
+        }
+
+        int runEnd = detectRun(arr, low, high);
+        if (runEnd >= high - 1) return;
+        int runStart = detectRunBackwards(arr, high - 1, low);
+        if (runStart - runEnd <= 1) {
+            merge(arr, low, runStart, high);
+            return;
+        }
+
+        if (runEnd >= low + (high - low) / 4 && runStart <= high - (high - low) / 4) {
+            sortRecursive(arr, runEnd + 1, runStart, badAllowed);
+            merge(arr, low, runEnd + 1, runStart);
+            merge(arr, low, runStart, high);
+            return;
+        }
+        else if (runEnd >= low + (high - low) / 4) {
+            sortRecursive(arr, runEnd + 1, high, badAllowed);
+            merge(arr, low, runEnd + 1, high);
+            return;
+        }
+        else if (runStart <= high - (high - low) / 4) {
+            sortRecursive(arr, low, runStart, badAllowed);
+            merge(arr, low, runStart, high);
+            return;
+        }
+        int pi, swapCount;
+        std::tie(pi, swapCount) = partition(arr, low, high);
+        int l_size = pi - low;
+        int r_size = high - pi - 1;
+        bool highly_unbalanced = l_size < r_size / 8 || r_size < l_size / 8;
+        if (swapCount <= 8) {
+            int insertCount = 0;
+            for (int i = low + 1; i < high; i++) {
+                myElement key = arr[i];
+                int j = i - 1;
+                while (j >= low && arr[j] > key) {
+                    arr[j + 1] = arr[j];
+                    j--;
+                    insertCount++;
+                    if (insertCount > 48) break;
+                }
+                arr[j + 1] = key;
+                if (insertCount > 48) break;
+            }
+            if (insertCount > 48) goto pdqSortLoop;
+            return;
+        }
+pdqSortLoop:
+        if (highly_unbalanced) {
+            if (--badAllowed == 0) {
+                fprintf(stderr, "PDQ-sort calling heap sort on range [%d, %d)\n", low, high);
+                std::make_heap(arr.begin() + low, arr.begin() + high);
+                std::sort_heap(arr.begin() + low, arr.begin() + high);
+                return;
+            }
+            if (l_size > 32) {
+                std::swap(arr[low], arr[low + l_size / 4]);
+                std::swap(arr[pi - 1], arr[pi - l_size / 4]);
+                if (l_size > 128) {
+                    std::swap(arr[low + 1], arr[low + l_size / 4 + 1]);
+                    std::swap(arr[low + 2], arr[low + l_size / 4 + 2]);
+                    std::swap(arr[pi - 2], arr[pi - l_size / 4 - 1]);
+                    std::swap(arr[pi - 3], arr[pi - l_size / 4 - 2]);
+                }
+            }
+            if (r_size > 32) {
+                std::swap(arr[pi + 1], arr[pi + r_size / 4 + 1]);
+                std::swap(arr[high - 1], arr[high - r_size / 4]);
+                if (r_size > 128) {
+                    std::swap(arr[pi + 2], arr[pi + r_size / 4 + 2]);
+                    std::swap(arr[pi + 3], arr[pi + r_size / 4 + 3]);
+                    std::swap(arr[high - 2], arr[high - r_size / 4 - 1]);
+                    std::swap(arr[high - 3], arr[high - r_size / 4 - 2]);
+                }
+            }
+        }
+        sortRecursive(arr, low, pi + 1, badAllowed);
+        sortRecursive(arr, pi + 1, high, badAllowed);
+    }
+};
+}
+
+namespace nsquaredalgos {
+class insertionSort : public sortAlgo {
+public:
+    void sort(myContainer& indices) override {
+        int n = indices.size();
+        for (int i = 1; i < n; i++) {
+            myElement key = indices[i];
+            int j = i - 1;
+            while (j >= 0 && indices[j] > key) {
+                indices[j + 1] = indices[j];
+                j--;
+            }
+            indices[j + 1] = key;
+        }
+    }
+};
+
+class selectionSort : public sortAlgo {
+public:
+    void sort(myContainer& indices) override {
+        int n = indices.size();
+        for (int i = 0; i < n - 1; i++) {
+            int minIdx = i;
+            for (int j = i + 1; j < n; j++) {
+                if (indices[j] < indices[minIdx]) {
+                    minIdx = j;
+                }
+            }
+            std::swap(indices[i], indices[minIdx]);
+        }
+    }
+};
+
+class bubbleSort : public sortAlgo {
+public:
+    void sort(myContainer& indices) override {
+        int newN, n = indices.size();
+        while (n > 1) {
+            newN = 0;
+            for (int j = 0; j < n - 1; ++j) {
+                if (indices[j] > indices[j + 1]) {
+                    std::swap(indices[j], indices[j + 1]);
+                    newN = j + 1;
+                }
+            }
+            n = newN;
+        }
+    }
+};
+
+class cocktailSort : public sortAlgo {
+public:
+    void sort(myContainer& indices) override {
+        int n = indices.size();
+        int start = 0;
+        int end = n - 1;
+
+        while (start < end) {
+            int newRight = start;
+            for (int i = start; i < end; i++) {
+                if (indices[i] > indices[i + 1]) {
+                    std::swap(indices[i], indices[i + 1]);
+                    newRight = i + 1;
+                }
+            }
+            end = newRight;
+
+            int newLeft = end;
+            for (int i = end; i > start; i--) {
+                if (indices[i - 1] > indices[i]) {
+                    std::swap(indices[i - 1], indices[i]);
+                    newLeft = i;
+                }
+            }
+            start = newLeft;
+        }
+    }
+};
+
+class gnomeSort : public sortAlgo {
+public:
+    void sort(myContainer& indices) override {
+        int n = indices.size();
+        int index = 0;
+
+        while (index < n) {
+            if (index == 0 || indices[index] >= indices[index - 1]) {
+                index++;
+            } else {
+                std::swap(indices[index], indices[index - 1]);
+                index--;
+            }
+        }
+    }
+};
+
+class combSort : public sortAlgo {
+public:
+    void sort(myContainer& indices) override {
+        int n = indices.size();
+        int gap = n;
+        const double shrink = 1.3;
+        bool sorted = false;
+
+        while (!sorted) {
+            gap = int(gap / shrink);
+            if (gap < 1) gap = 1;
+            sorted = true;
+
+            for (int i = gap; i < n; i++) {
+                if (indices[i - gap] > indices[i]) {
+                    std::swap(indices[i - gap], indices[i]);
+                    sorted = false;
+                }
+            }
+        }
+    }
+};
+}
+
+namespace nlognalgos {
+class mergeSort : public sortAlgo {
+public:
+    void sort(myContainer& indices) override {
+        mergeSortRecursive(indices, 0, indices.size());
+    }
+private:
+    void mergeSortRecursive(myContainer& arr, int left, int right) {
+        if (right - left <= 1) return;
+        int mid = left + (right - left) / 2;
+        mergeSortRecursive(arr, left, mid);
+        mergeSortRecursive(arr, mid, right);
+        merge(arr, left, mid, right);
+    }
+    static void merge(myContainer& arr, int l, int m, int r) {
+        myContainer leftArr(arr.begin() + l, arr.begin() + m);
+        int i = 0, j = m, k = l;
+        int leftSize = leftArr.size();
+
+        while (i < leftSize && j < r) {
+            if (leftArr[i] <= arr[j]) {
+                arr[k++] = leftArr[i++];
+            } else {
+                arr[k++] = arr[j++];
+            }
+        }
+        while (i < leftSize) {
+            arr[k++] = leftArr[i++];
+        }
+        while (j < r) {
+            arr[k++] = arr[j++];
+        }
+    }
+};
+
+class heapSort : public sortAlgo {
+public:
+    void sort(myContainer& indices) override {
+        std::make_heap(indices.begin(), indices.end());
+        std::sort_heap(indices.begin(), indices.end());
+    }
+};
+
+static const int smoothSortLP[] = {
+    1, 1, 3, 5, 9, 15, 25, 41, 67, 109,
+    177, 287, 465, 753, 1219, 1973, 3193, 5167, 8361, 13529, 21891,
+    35421, 57313, 92735, 150049, 242785, 392835, 635621, 1028457,
+    1664079, 2692537, 4356617, 7049155, 11405773, 18454929, 29860703,
+    48315633, 78176337, 126491971, 204668309, 331160281, 535828591,
+    866988873 // the next number is > 31 bits.
+};
+class smoothSort : public sortAlgo {
+public:
+    void sort(myContainer& indices) override {
+        sortLoop(indices, 0, indices.size() - 1);
+    }
+private:
+    static void sift(myContainer& A, int pshift, int head) {
+        myElement val = A[head];
+        while (pshift > 1) {
+            int rt = head - 1;
+            int lf = head - 1 - smoothSortLP[pshift - 2];
+
+            if (val >= A[lf] && val >= A[rt])
+                break;
+
+            if (A[lf] >= A[rt]) {
+                A[head] = A[lf];
+                head = lf;
+                pshift -= 1;
+            }
+            else {
+                A[head] = A[rt];
+                head = rt;
+                pshift -= 2;
+            }
+        }
+        A[head] = val;
+    }
+
+    static void trinkle(myContainer& A, int p, int pshift, int head, bool isTrusty){
+        myElement val = A[head];
+        while (p != 1) {
+            int stepson = head - smoothSortLP[pshift];
+            if (A[stepson] <= val)
+                break;
+            if (!isTrusty && pshift > 1) {
+                int rt = head - 1;
+                int lf = head - 1 - smoothSortLP[pshift - 2];
+                if (A[rt] >= A[stepson] || A[lf] >= A[stepson])
+                    break;
+            }
+            A[head] = A[stepson];
+            head = stepson;
+            int trail = __builtin_ctz(p & ~1);
+            p >>= trail;
+            pshift += trail;
+            isTrusty = false;
+        }
+
+        if (!isTrusty) {
+            A[head] = val;
+            sift(A, pshift, head);
+        }
+    }
+
+    void sortLoop(myContainer& A, int lo, int hi) {
+        int head = lo;
+        int p = 1;
+        int pshift = 1;
+
+        while (head < hi) {
+            if ((p & 3) == 3) {
+                sift(A, pshift, head);
+                p >>= 2;
+                pshift += 2;
+            }
+            else {
+                if (smoothSortLP[pshift - 1] >= hi - head) {
+                    trinkle(A, p, pshift, head, false);
+                } else {
+                    sift(A, pshift, head);
+                }
+
+                if (pshift == 1) {
+                    p <<= 1;
+                    pshift--;
+                } else {
+                    p <<= (pshift - 1);
+                    pshift = 1;
+                }
+            }
+            p |= 1;
+            head++;
+        }
+        trinkle(A, p, pshift, head, false);
+        while (pshift != 1 || p != 1) {
+            if (pshift <= 1) {
+                int trail = __builtin_ctz(p & ~1);
+                p >>= trail;
+                pshift += trail;
+            }
+            else {
+                p <<= 2;
+                p ^= 7;
+                pshift -= 2;
+                trinkle(A, p >> 1, pshift + 1, head - smoothSortLP[pshift] - 1, true);
+                trinkle(A, p, pshift, head - 1, true);
+            }
+            head--;
+        }
+    }
+};
+
+class shellSort : public sortAlgo {
+public:
+    void sort(myContainer& arr) override {
+        int n = arr.size();
+        for (int gap = n / 2; gap > 0; gap /= 3) {
+            for (int i = gap; i < n; i++) {
+                myElement temp = arr[i];
+                int j;
+                for (j = i; j >= gap && arr[j - gap] > temp; j -= gap) {
+                    arr[j] = arr[j - gap];
+                }
+                arr[j] = temp;
+            }
+        }
+    }
+};
+
+class bitonicSort : public sortAlgo {
+private:
+    static void compare(myContainer& A, int i, int j, bool dir) {
+        if (dir == (A[i] > A[j])) std::swap(A[i], A[j]);
+    }
+
+    static int greatestPowerOfTwoLessThan(int n) {
+        int k = 1;
+        while (k < n) k = k << 1;
+        return k >> 1;
+    }
+
+    static void bitonicMerge(myContainer& A, int lo, int n, bool dir) {
+        if (n > 1) {
+            int m = greatestPowerOfTwoLessThan(n);
+            for (int i = lo; i < lo + n - m; i++)
+                compare(A, i, i+m, dir);
+            bitonicMerge(A, lo, m, dir);
+            bitonicMerge(A, lo + m, n - m, dir);
+        }
+    }
+
+    static void sortLoop(myContainer& A, int lo, int n, bool dir) {
+        if (n > 1) {
+            int m = n / 2;
+            sortLoop(A, lo, m, !dir);
+            sortLoop(A, lo + m, n - m, dir);
+            bitonicMerge(A, lo, n, dir);
+        }
+    }
+public:
+    void sort(myContainer& indices) override {
+        sortLoop(indices, 0, indices.size(), true);
+    }
+};
+template <typename pivotSelector>
+class quickSortLR : public sortAlgo {
+public:
+    void sort(myContainer& arr) override {
+        quickSortRecursive(arr, 0, arr.size() - 1);
+    }
+private:
+    void quickSortRecursive(myContainer& arr, int low, int high) {
+        if (high - low <= 1) return;
+        static pivotSelector ps;
+        int p = ps.selectPivot(arr, low, high);
+        myElement pivot = arr[p];
+        int i = low;
+        int j = high - 1;
+
+        while (i <= j) {
+            while (arr[i] < pivot) i++;
+            while (arr[j] > pivot) j--;
+            if (i <= j) {
+                std::swap(arr[i], arr[j]);
+                if (p == i) p = j;
+                else if (p == j) p = i;
+                i++;
+                j--;
+            }
+        }
+        if (low < j)
+            quickSortRecursive(arr, low, j);
+        if (i < high)
+            quickSortRecursive(arr, i, high);
+    }
+};
+
+template <typename pivotSelector>
+class quicksortLL : public sortAlgo {
+public:
+    void sort(myContainer& arr) override {
+        quickSortRecursive(arr, 0, arr.size() - 1);
+    }
+private:
+    void quickSortRecursive(myContainer& arr, int low, int high) {
+        if (high - low <= 1) return;
+        static pivotSelector ps;
+        int p = ps.selectPivot(arr, low, high);
+        myElement pivot = arr[p];
+        int i = low;
+        for (int j = low; j < high; j++) {
+            if (arr[j] < pivot) {
+                std::swap(arr[i], arr[j]);
+                i++;
+            }
+        }
+        std::swap(arr[i], arr[high - 1]);
+        if (low < i - 1)
+            quickSortRecursive(arr, low, i - 1);
+        if (i + 1 < high)
+            quickSortRecursive(arr, i + 1, high);
+    }
+};
+}
+
+static sortAlgo* const sortalgos[] = 
+{
+    new stlalgos::STLSort(),
+    new stlalgos::STLStableSort(),
+    new hybridalgos::timSort(),
+    new hybridalgos::pdqSort(),
+    new nsquaredalgos::insertionSort(),
+    new nsquaredalgos::selectionSort(),
+    new nsquaredalgos::bubbleSort(),
+    new nsquaredalgos::cocktailSort(),
+    new nsquaredalgos::gnomeSort(),
+    new nsquaredalgos::combSort(),
+    new nlognalgos::mergeSort(),
+    new nlognalgos::heapSort(),
+    new nlognalgos::smoothSort(),
+    new nlognalgos::shellSort(),
+    new nlognalgos::bitonicSort(),
+    new nlognalgos::quickSortLR<nlognalgos::firstPivot>(),
+    new nlognalgos::quickSortLR<nlognalgos::lastPivot>(),
+    new nlognalgos::quickSortLR<nlognalgos::middlePivot>(),
+    new nlognalgos::quickSortLR<nlognalgos::medianOfThreePivot>(),
+    new nlognalgos::quickSortLR<nlognalgos::medianOfNinePivot>(),
+    new nlognalgos::quickSortLR<nlognalgos::randomPivot>(),
+    new nlognalgos::quicksortLL<nlognalgos::firstPivot>(),
+    new nlognalgos::quicksortLL<nlognalgos::lastPivot>(),
+    new nlognalgos::quicksortLL<nlognalgos::middlePivot>(),
+    new nlognalgos::quicksortLL<nlognalgos::medianOfThreePivot>(),
+    new nlognalgos::quicksortLL<nlognalgos::medianOfNinePivot>(),
+    new nlognalgos::quicksortLL<nlognalgos::randomPivot>()
+};
