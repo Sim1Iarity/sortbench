@@ -3,7 +3,7 @@
 
 std::vector<sortAlgo*> flagToAlgo(unsigned int flag) {
     std::vector<sortAlgo*> result;
-    for (int i = 0; i < sizeof(sortalgos)/sizeof(sortAlgo*); i++) {
+    for (unsigned i = 0; i < sizeof(sortalgos)/sizeof(sortAlgo*); i++) {
         if (flag & (1u << i)) result.push_back(sortalgos[i]);
     }
     return result;
@@ -11,7 +11,7 @@ std::vector<sortAlgo*> flagToAlgo(unsigned int flag) {
 
 std::vector<std::pair<genIndices*, std::string> > flagToGen(unsigned int flag) {
     std::vector<std::pair<genIndices*, std::string> > result;
-    for (int i = 0; i < sizeof(generators)/sizeof(generators[0]); i++) {
+    for (unsigned i = 0; i < sizeof(generators)/sizeof(generators[0]); i++) {
         if (flag & (1u << i)) result.push_back(generators[i]);
     }
     return result;
@@ -43,7 +43,7 @@ void bench_worker(unsigned int flag, unsigned int flagGen, int n) {
             std::chrono::steady_clock::time_point t = std::chrono::steady_clock::now();
             algo->sort(indices_sorted);
             std::chrono::steady_clock::duration d = std::chrono::steady_clock::now() - t;
-            printf(" $%.6lf\\text{ms}(%llu)$ |", d.count() / 1000000.0, compareCount);
+            printf(" $%.6lf\\text{ms}(%" PRIu64 ")$ |", d.count() / 1000000.0, compareCount);
             fflush(stdout);
         }
         putchar('\n');
@@ -54,7 +54,7 @@ void bench_worker(unsigned int flag, unsigned int flagGen, int n) {
 void bench(unsigned int flag, unsigned int flagGen, std::vector<int> nArr) {
     printf("| data size |");
     int count = 1;
-    for (int i = 0; i < sizeof(sortalgos)/sizeof(sortAlgo); i++) {
+    for (unsigned i = 0; i < sizeof(sortalgos)/sizeof(sortAlgo); i++) {
         if (flag & (1u << i)) {
             count++;
             printf(" %s |", algoDescription[i][1].c_str());

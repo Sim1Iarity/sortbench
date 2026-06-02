@@ -10,6 +10,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstring>
+#include <cinttypes>
 #include <type_traits>
 
 static size_t compareCount = 0;
