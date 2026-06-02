@@ -130,12 +130,12 @@ public:
     void generate(myElement* indices, int n) override {
         int curpos = 0;
         for (int i = 0; i < n / 8; i++) {
-            for (int j = 0; j < 7; j++) indices[curpos++] = i * 8 + j;
+            for (int j = 1; j <= 7; j++) indices[curpos++] = i * 8 + j;
         }
         for (int i = curpos; i < n; i++) {
             indices[i] = (i - curpos) * 8;
         }
-        std::shuffle(indices + curpos, indices, std::mt19937(std::random_device{}()));
+        std::shuffle(indices + curpos, indices + n, std::mt19937(std::random_device{}()));
     }
 };
 
@@ -144,7 +144,7 @@ public:
     void generate(myElement* indices, int n) override {
         int curpos = 0;
         for (int i = 0; i < n / 8; i++) {
-            for (int j = 0; j < 7; j++) indices[curpos++] = i * 8 + j + 1;
+            for (int j = 1; j <= 7; j++) indices[curpos++] = i * 8 + j;
         }
         for (int i = curpos; i < n; i++) {
             indices[i] = (i - curpos) * 8;
