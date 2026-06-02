@@ -351,88 +351,91 @@ private:
     }
 
     static void sortRecursive(myContainer& arr, int low, int high, int badAllowed) {
-        if (high - low <= 32) {
-            insertionSort(arr, low, high - 1);
-            return;
-        }
-
-        int runEnd = detectRun(arr, low, high);
-        if (runEnd >= high - 1) return;
-        int runStart = detectRunBackwards(arr, high - 1, low);
-        if (runStart - runEnd <= 1) {
-            merge(arr, low, runStart, high);
-            return;
-        }
-
-        if (runEnd >= low + (high - low) / 4 && runStart <= high - (high - low) / 4) {
-            sortRecursive(arr, runEnd + 1, runStart, badAllowed);
-            merge(arr, low, runEnd + 1, runStart);
-            merge(arr, low, runStart, high);
-            return;
-        }
-        else if (runEnd >= low + (high - low) / 4) {
-            sortRecursive(arr, runEnd + 1, high, badAllowed);
-            merge(arr, low, runEnd + 1, high);
-            return;
-        }
-        else if (runStart <= high - (high - low) / 4) {
-            sortRecursive(arr, low, runStart, badAllowed);
-            merge(arr, low, runStart, high);
-            return;
-        }
-        int pi, swapCount;
-        std::tie(pi, swapCount) = partition(arr, low, high);
-        int l_size = pi - low;
-        int r_size = high - pi - 1;
-        bool highly_unbalanced = l_size < r_size / 8 || r_size < l_size / 8;
-        if (__builtin_expect(swapCount <= 8, false)) {
-            int insertCount = 0;
-            for (int i = low + 1; i < high; i++) {
-                myElement key = arr[i];
-                int j = i - 1;
-                while (j >= low && arr[j] > key) {
-                    arr[j + 1] = arr[j];
-                    j--;
-                    insertCount++;
-                    if (insertCount > 48) break;
-                }
-                arr[j + 1] = key;
-                if (insertCount > 48) break;
-            }
-            if (insertCount > 48) goto pdqSortLoop;
-            return;
-        }
-pdqSortLoop:
-        if (highly_unbalanced) {
-            if (__builtin_expect(--badAllowed == 0, false)) {
-                fprintf(stderr, "PDQ-sort calling heap sort on range [%d, %d)\n", low, high);
-                std::make_heap(arr.begin() + low, arr.begin() + high);
-                std::sort_heap(arr.begin() + low, arr.begin() + high);
+        while (high - low > 32) {
+            int runEnd = detectRun(arr, low, high);
+            if (runEnd >= high - 1) return;
+            int runStart = detectRunBackwards(arr, high - 1, low);
+            if (runStart - runEnd <= 1) {
+                merge(arr, low, runStart, high);
                 return;
             }
-            if (l_size > 32) {
-                std::swap(arr[low], arr[low + l_size / 4]);
-                std::swap(arr[pi - 1], arr[pi - l_size / 4]);
-                if (l_size > 128) {
-                    std::swap(arr[low + 1], arr[low + l_size / 4 + 1]);
-                    std::swap(arr[low + 2], arr[low + l_size / 4 + 2]);
-                    std::swap(arr[pi - 2], arr[pi - l_size / 4 - 1]);
-                    std::swap(arr[pi - 3], arr[pi - l_size / 4 - 2]);
+            if (runEnd >= low + (high - low) / 4 && runStart <= high - (high - low) / 4) {
+                sortRecursive(arr, runEnd + 1, runStart, badAllowed);
+                merge(arr, low, runEnd + 1, runStart);
+                merge(arr, low, runStart, high);
+                return;
+            }
+            else if (runEnd >= low + (high - low) / 4) {
+                sortRecursive(arr, runEnd + 1, high, badAllowed);
+                merge(arr, low, runEnd + 1, high);
+                return;
+            }
+            else if (runStart <= high - (high - low) / 4) {
+                sortRecursive(arr, low, runStart, badAllowed);
+                merge(arr, low, runStart, high);
+                return;
+            }
+            int pi, swapCount;
+            std::tie(pi, swapCount) = partition(arr, low, high);
+            int l_size = pi - low;
+            int r_size = high - pi - 1;
+            bool highly_unbalanced = l_size < r_size / 8 || r_size < l_size / 8;
+            if (__builtin_expect(swapCount <= 8, false)) {
+                int insertCount = 0;
+                for (int i = low + 1; i < high; i++) {
+                    myElement key = arr[i];
+                    int j = i - 1;
+                    while (j >= low && arr[j] > key) {
+                        arr[j + 1] = arr[j];
+                        j--;
+                        insertCount++;
+                        if (insertCount > 48) break;
+                    }
+                    arr[j + 1] = key;
+                    if (insertCount > 48) break;
+                }
+                if (insertCount > 48) goto pdqSortLoop;
+                return;
+            }
+pdqSortLoop:
+            if (highly_unbalanced) {
+                if (__builtin_expect(--badAllowed == 0, false)) {
+                    fprintf(stderr, "PDQ-sort calling heap sort on range [%d, %d)\n", low, high);
+                    std::make_heap(arr.begin() + low, arr.begin() + high);
+                    std::sort_heap(arr.begin() + low, arr.begin() + high);
+                    return;
+                }
+                if (l_size > 32) {
+                    std::swap(arr[low], arr[low + l_size / 4]);
+                    std::swap(arr[pi - 1], arr[pi - l_size / 4]);
+                    if (l_size > 128) {
+                        std::swap(arr[low + 1], arr[low + l_size / 4 + 1]);
+                        std::swap(arr[low + 2], arr[low + l_size / 4 + 2]);
+                        std::swap(arr[pi - 2], arr[pi - l_size / 4 - 1]);
+                        std::swap(arr[pi - 3], arr[pi - l_size / 4 - 2]);
+                    }
+                }
+                if (r_size > 32) {
+                    std::swap(arr[pi + 1], arr[pi + r_size / 4 + 1]);
+                    std::swap(arr[high - 1], arr[high - r_size / 4]);
+                    if (r_size > 128) {
+                        std::swap(arr[pi + 2], arr[pi + r_size / 4 + 2]);
+                        std::swap(arr[pi + 3], arr[pi + r_size / 4 + 3]);
+                        std::swap(arr[high - 2], arr[high - r_size / 4 - 1]);
+                        std::swap(arr[high - 3], arr[high - r_size / 4 - 2]);
+                    }
                 }
             }
-            if (r_size > 32) {
-                std::swap(arr[pi + 1], arr[pi + r_size / 4 + 1]);
-                std::swap(arr[high - 1], arr[high - r_size / 4]);
-                if (r_size > 128) {
-                    std::swap(arr[pi + 2], arr[pi + r_size / 4 + 2]);
-                    std::swap(arr[pi + 3], arr[pi + r_size / 4 + 3]);
-                    std::swap(arr[high - 2], arr[high - r_size / 4 - 1]);
-                    std::swap(arr[high - 3], arr[high - r_size / 4 - 2]);
-                }
+            if (high - pi - 1 > pi + 1 - low) {
+                sortRecursive(arr, low, pi + 1, badAllowed);
+                low = pi + 1;
+            }
+            else {
+                sortRecursive(arr, pi + 1, high, badAllowed);
+                high = pi + 1;
             }
         }
-        sortRecursive(arr, low, pi + 1, badAllowed);
-        sortRecursive(arr, pi + 1, high, badAllowed);
+        insertionSort(arr, low, high - 1);
     }
 };
 }
