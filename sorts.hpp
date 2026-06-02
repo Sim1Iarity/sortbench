@@ -6,35 +6,35 @@ public:
     virtual ~sortAlgo() {}
 };
 
-static const std::string algoDescription[] = 
+static const std::string algoDescription[][2] = 
 {
-    "std::sort",
-    "std::stable_sort",
-    "Timsort",
-    "PDQ-sort",
-    "Insertion sort",
-    "Selection sort",
-    "Bubble sort",
-    "Cocktail sort",
-    "Gnome sort",
-    "Comb sort",
-    "Merge sort",
-    "Heap sort",
-    "Smooth sort",
-    "Shell sort",
-    "Bitonic sort",
-    "Quick sort (LR, pivot=first)",
-    "Quick sort (LR, pivot=last)",
-    "Quick sort (LR, pivot=middle)",
-    "Quick sort (LR, pivot=median of 3)",
-    "Quick sort (LR, pivot=median of 9)",
-    "Quick sort (LR, pivot=random)",
-    "Quick sort (LL, pivot=first)",
-    "Quick sort (LL, pivot=last)",
-    "Quick sort (LL, pivot=middle)",
-    "Quick sort (LL, pivot=median of 3)",
-    "Quick sort (LL, pivot=median of 9)",
-    "Quick sort (LL, pivot=random)"
+    {"stlsort", "std::sort"},
+    {"stlstable", "std::stable_sort"},
+    {"tim", "Timsort"},
+    {"pdq", "PDQ-sort"},
+    {"insertion", "Insertion sort"},
+    {"selection", "Selection sort"},
+    {"bubble", "Bubble sort"},
+    {"cocktail", "Cocktail sort"},
+    {"gnome", "Gnome sort"},
+    {"comb", "Comb sort"},
+    {"merge", "Merge sort"},
+    {"heap", "Heap sort"},
+    {"smooth", "Smooth sort"},
+    {"shell", "Shell sort"},
+    {"bitonic", "Bitonic sort"},
+    {"quicklrfirst", "Quick sort (LR, pivot=first)"},
+    {"quicklrlast", "Quick sort (LR, pivot=last)"},
+    {"quicklrmid", "Quick sort (LR, pivot=middle)"},
+    {"quicklrmed3", "Quick sort (LR, pivot=median of 3)"},
+    {"quicklrmed9", "Quick sort (LR, pivot=median of 9)"},
+    {"quicklrrand", "Quick sort (LR, pivot=random)"},
+    {"quickllfirst", "Quick sort (LL, pivot=first)"},
+    {"quicklllast", "Quick sort (LL, pivot=last)"},
+    {"quickllmid", "Quick sort (LL, pivot=middle)"},
+    {"quickllmed3", "Quick sort (LL, pivot=median of 3)"},
+    {"quickllmed9", "Quick sort (LL, pivot=median of 9)"},
+    {"quickllrand", "Quick sort (LL, pivot=random)"}
 };
 
 namespace nlognalgos {
