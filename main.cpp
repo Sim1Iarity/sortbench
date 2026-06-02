@@ -57,7 +57,7 @@ void bench(unsigned int flag, unsigned int flagGen, std::vector<int> nArr) {
     for (int i = 0; i < sizeof(sortalgos)/sizeof(sortAlgo); i++) {
         if (flag & (1u << i)) {
             count++;
-            printf(" %s |", algoDescription[i].c_str());
+            printf(" %s |", algoDescription[i][1].c_str());
         }
     }
     putchar('\n');
@@ -66,14 +66,354 @@ void bench(unsigned int flag, unsigned int flagGen, std::vector<int> nArr) {
     for (int n : nArr) bench_worker(flag, flagGen, n);
 }
 
-int main() {
+void print_usage(char* argv[]) {
+    printf("Usage: %s [-a algo]... [-g gen]... [-o outputfile] @filename\n", argv[0]);
+    printf("   or: %s [-a algo]... [-g gen]... [-o outputfile] ...\n", argv[0]);
+    printf("Option [-a algo]... can be replaced with [-a algo1,algo2,...] or [-a=algo1,algo2,...]. Similar for generators.\n");
+    printf("-a can be replaced by --algo; -g can be replaced by --gen\n");
+    printf("Valid options for algo: \n");
+    for (int i = 0; i < 27; i++) {
+        printf("\t%s: %s\n", algoDescription[i][0].c_str(), algoDescription[i][1].c_str());
+    }
+    printf("Valid options for gen: \n");
+    for (int i = 0; i < 13; i++) {
+        printf("\t%s: %s\n", genNames[i].c_str(), generators[i].second.c_str());
+    }
+}
+
+int find_index(bool is_gen, std::string opt) {
+    for (char& c : opt) c = tolower(c);
+    if (is_gen) {
+        int ret = std::find(genNames, genNames + 13, opt) - genNames;
+        if (ret == 13) return -1;
+        return ret;
+    }
+    for (int i = 0; i < 20; i++) if (algoDescription[i][0] == opt) return i;
+    return -1;
+}
+
+void parse_args(std::vector<int>& nArr, unsigned int& flag, unsigned int& flagGen, int argc, char* argv[]) {
+    for (int i = 1; i < argc; i++) {
+        if (argv[i][0] == '-') {
+            if (argv[i][1] == 'a') {
+                if (strlen(argv[i]) == 2) {
+                    i++;
+                    if (i == argc) {
+                        printf("Error: algorithms not specified\n");
+                        printf("See --help for a full list of algorithms\n");
+                        exit(1);
+                    }
+                    char *token = strtok(argv[i], ",");
+                    while (token != NULL) {
+                        int num = find_index(false, token);
+                        if (num == -1) {
+                            printf("Error: unknown algorithm %s\n", token);
+                            printf("See --help for a full list of algorithms\n");
+                            exit(1);
+                        }
+                        flag |= 1u << num;
+                        token = strtok(NULL, ",");
+                    }
+                }
+                else if (argv[i][2] == '=') {
+                    if (strlen(argv[i]) == 3) {
+                        printf("Error: algorithms not specified\n");
+                        printf("See --help for a full list of algorithms\n");
+                        exit(1);
+                    }
+                    char *token = strtok(argv[i] + 3, ",");
+                    while (token != NULL) {
+                        int num = find_index(false, token);
+                        if (num == -1) {
+                            printf("Error: unknown algorithm %s\n", token);
+                            printf("See --help for a full list of algorithms\n");
+                            exit(1);
+                        }
+                        flag |= 1u << num;
+                        token = strtok(NULL, ",");
+                    }
+                }
+                else {
+                    printf("Error: unknown option %s\n", argv[i]);
+                    printf("See --help for more information\n");
+                    exit(1);
+                }
+            }
+            else if (argv[i][1] == 'g') {
+                if (strlen(argv[i]) == 2) {
+                    i++;
+                    if (i == argc) {
+                        printf("Error: generators not specified\n");
+                        printf("See --help for a full list of generators\n");
+                        exit(1);
+                    }
+                    char *token = strtok(argv[i], ",");
+                    while (token != NULL) {
+                        int num = find_index(true, token);
+                        if (num == -1) {
+                            printf("Error: unknown generator %s\n", token);
+                            printf("See --help for a full list of generators\n");
+                            exit(1);
+                        }
+                        flagGen |= 1u << num;
+                        token = strtok(NULL, ",");
+                    }
+                }
+                else if (argv[i][2] == '=') {
+                    if (strlen(argv[i]) == 3) {
+                        printf("Error: generators not specified\n");
+                        printf("See --help for a full list of generators\n");
+                        exit(1);
+                    }
+                    char *token = strtok(argv[i] + 3, ",");
+                    while (token != NULL) {
+                        int num = find_index(true, token);
+                        if (num == -1) {
+                            printf("Error: unknown generator %s\n", token);
+                            printf("See --help for a full list of generators\n");
+                            exit(1);
+                        }
+                        flagGen |= 1u << num;
+                        token = strtok(NULL, ",");
+                    }
+                }
+                else {
+                    printf("Error: unknown option %s\n", argv[i]);
+                    printf("See --help for more information\n");
+                    exit(1);
+                }
+            }
+            else if (argv[i][1] == 'h') {
+                if (strlen(argv[i]) != 2) {
+                    printf("Error: unknown option %s\n", argv[i]);
+                    printf("See --help for more information\n");
+                    exit(1);
+                }
+                print_usage(argv);
+                exit(0);
+            }
+            else if (argv[i][1] == 'o') {
+                if (strlen(argv[i]) == 2) {
+                    i++;
+                    if (i == argc) {
+                        printf("Error: output filename not specified\n");
+                        exit(1);
+                    }
+                    if (freopen(argv[i], "at", stdout) == NULL) {
+                        std::string err_msg = std::string("Error: cannot open file ") + argv[i];
+                        perror(err_msg.c_str());
+                        exit(errno);
+                    }
+                }
+                else if (argv[i][2] == '=') {
+                    if (strlen(argv[i]) == 3) {
+                        printf("Error: output file not specified\n");
+                        printf("See --help for more information\n");
+                        exit(1);
+                    }
+                    if (freopen(argv[i] + 3, "at", stdout) == NULL) {
+                        std::string err_msg = std::string("Error: cannot open file ") + (argv[i] + 3);
+                        perror(err_msg.c_str());
+                        exit(errno);
+                    }
+                }
+            }
+            else if (argv[i][1] == '-') {
+                if (strlen(argv[i]) <= 4) {
+                    printf("Error: unknown option %s\n", argv[i]);
+                    printf("See --help for more information\n");
+                    exit(1);
+                }
+                if (std::equal(argv[i], argv[i] + 5, "--gen")) {
+                    if (strlen(argv[i]) == 5) {
+                        i++;
+                        if (i == argc) {
+                            printf("Error: generators not specified\n");
+                            printf("See --help for a full list of generators\n");
+                            exit(1);
+                        }
+                        char *token = strtok(argv[i], ",");
+                        while (token != NULL) {
+                            int num = find_index(true, token);
+                            if (num == -1) {
+                                printf("Error: unknown generator %s\n", token);
+                                printf("See --help for a full list of generators\n");
+                                exit(1);
+                            }
+                            flagGen |= 1u << num;
+                            token = strtok(NULL, ",");
+                        }
+                    }
+                    else if (argv[i][5] == '=') {
+                        if (strlen(argv[i]) == 6) {
+                            printf("Error: generators not specified\n");
+                            printf("See --help for a full list of generators\n");
+                            exit(1);
+                        }
+                        char *token = strtok(argv[i] + 6, ",");
+                        while (token != NULL) {
+                            int num = find_index(true, token);
+                            if (num == -1) {
+                                printf("Error: unknown generator %s\n", token);
+                                printf("See --help for a full list of generators\n");
+                                exit(1);
+                            }
+                            flagGen |= 1u << num;
+                            token = strtok(NULL, ",");
+                        }
+                    }
+                    else {
+                        printf("Error: unknown option %s\n", argv[i]);
+                        printf("See --help for more information\n");
+                        exit(1);
+                    }
+                }
+                else if (std::equal(argv[i], argv[i] + 5, "--out")) {
+                    if (strlen(argv[i]) == 5) {
+                        i++;
+                        if (i == argc) {
+                            printf("Error: output filename not specified\n");
+                            exit(1);
+                        }
+                        if (freopen(argv[i], "at", stdout) == NULL) {
+                            std::string err_msg = std::string("Error: cannot open file ") + argv[i];
+                            perror(err_msg.c_str());
+                            exit(errno);
+                        }
+                    }
+                    else if (argv[i][5] == '=') {
+                        if (strlen(argv[i]) == 6) {
+                            printf("Error: output file not specified\n");
+                            printf("See --help for more information\n");
+                            exit(1);
+                        }
+                        if (freopen(argv[i] + 6, "at", stdout) == NULL) {
+                            std::string err_msg = std::string("Error: cannot open file ") + (argv[i] + 6);
+                            perror(err_msg.c_str());
+                            exit(errno);
+                        }
+                    }
+                }
+                else if (strlen(argv[i]) == 5) {
+                    printf("Error: unknown option %s\n", argv[i]);
+                    printf("See --help for more information\n");
+                    exit(1);
+                }
+                else if (std::equal(argv[i], argv[i] + 6, "--algo")) {
+                    if (strlen(argv[i]) == 6) {
+                        i++;
+                        if (i == argc) {
+                            printf("Error: algorithms not specified\n");
+                            printf("See --help for a full list of algorithms\n");
+                            exit(1);
+                        }
+                        char *token = strtok(argv[i], ",");
+                        while (token != NULL) {
+                            int num = find_index(false, token);
+                            if (num == -1) {
+                                printf("Error: unknown algorithm %s\n", token);
+                                printf("See --help for a full list of algorithms\n");
+                                exit(1);
+                            }
+                            flag |= 1u << num;
+                            token = strtok(NULL, ",");
+                        }
+                    }
+                    else if (argv[i][6] == '=') {
+                        if (strlen(argv[i]) == 7) {
+                            printf("Error: algorithms not specified\n");
+                            printf("See --help for a full list of algorithms\n");
+                            exit(1);
+                        }
+                        char *token = strtok(argv[i] + 7, ",");
+                        while (token != NULL) {
+                            int num = find_index(false, token);
+                            if (num == -1) {
+                                printf("Error: unknown algorithm %s\n", token);
+                                printf("See --help for a full list of algorithms\n");
+                                exit(1);
+                            }
+                            flag |= 1u << num;
+                            token = strtok(NULL, ",");
+                        }
+                    }
+                    else {
+                        printf("Error: unknown option %s\n", argv[i]);
+                        printf("See --help for more information\n");
+                        exit(1);
+                    }
+                }
+                else if (std::equal(argv[i], argv[i] + 6, "--help")) {
+                    if (strlen(argv[i]) != 6) {
+                        printf("Error: unknown option %s\n", argv[i]);
+                        printf("See --help for more information\n");
+                        exit(1);
+                    }
+                    print_usage(argv);
+                    exit(0);
+                }
+                else {
+                    printf("Error: unknown option %s\n", argv[i]);
+                    printf("See --help for more information\n");
+                    exit(1);
+                }
+            }
+            else {
+                printf("Error: unknown option %s\n", argv[i]);
+                printf("See --help for more information\n");
+                exit(1);
+            }
+        }
+        else if (argv[i][0] == '@') {
+            if (strlen(argv[i]) == 1) {
+                printf("Error: unused option %s\n", argv[i]);
+                printf("See --help for more information\n");
+                exit(1);
+            }
+            FILE* inputfile = fopen(argv[i] + 1, "rt");
+            if (inputfile == NULL) {
+                std::string err_msg = std::string("Error: cannot open file ") + (argv[i] + 1);
+                perror(err_msg.c_str());
+                exit(errno);
+            }
+            int num = 0;
+            while (fscanf(inputfile, "%d", &num) == 1) nArr.push_back(num);
+            fclose(inputfile);
+        }
+        else if (argv[i][0] >= '1' && argv[i][0] <= '9') {
+            int num = 0;
+            if (sscanf(argv[i], "%d", &num) != 1) {
+                printf("Error: unused option %s\n", argv[i]);
+                printf("See --help for more information\n");
+                exit(1);
+            }
+            nArr.push_back(num);
+        }
+        else {
+            printf("Error: unused option %s\n", argv[i]);
+            printf("See --help for more information\n");
+            exit(1);
+        }
+    }
+}
+
+int main(int argc, char* argv[]) {
+    if (argc == 1) {
+        print_usage(argv);
+        return 0;
+    }
     signal(SIGSEGV, stackOverflowHandler);
     std::vector<int> nArr;
-    int nelement;
-    unsigned int flag, flagGen;
-    scanf("%d%u%u", &nelement, &flag, &flagGen);
-    nArr.resize(nelement);
-    for (int i = 0; i < nelement; i++) scanf("%d", &nArr[i]);
+    unsigned int flag = 0, flagGen = 0;
+    parse_args(nArr, flag, flagGen, argc, argv);
+    if (flag == 0) {
+        printf("Error: no algorithms to benchmark\n");
+        exit(1);
+    }
+    if (flagGen == 0 || nArr.empty()) {
+        printf("Error: no arrays to benchmark\n");
+        exit(1);
+    }
     bench(flag, flagGen, nArr);
     return 0;
 }
