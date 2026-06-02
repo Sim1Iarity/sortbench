@@ -300,7 +300,7 @@ private:
     }
     static std::pair<int,int> partition(myContainer& arr, int low, int high) {
         int swapCount = 0, p;
-        if (high - low >= 128) {
+        if (__builtin_expect(high - low >= 128, true)) {
             p = ::nlognalgos::medianOfNinePivot().selectPivot(arr, low, high);
         }
         else p = ::nlognalgos::medianOfThreePivot().selectPivot(arr, low, high);
@@ -311,7 +311,7 @@ private:
         while (i <= j) {
             while (i <= j && arr[i] <= pivot) i++;
             while (i <= j && arr[j] >= pivot) j--;
-            if (i <= j) {
+            if (__builtin_expect(i <= j, true)) {
                 std::swap(arr[i], arr[j]);
                 swapCount++;
                 if (p == i) p = j;
@@ -385,7 +385,7 @@ private:
         int l_size = pi - low;
         int r_size = high - pi - 1;
         bool highly_unbalanced = l_size < r_size / 8 || r_size < l_size / 8;
-        if (swapCount <= 8) {
+        if (__builtin_expect(swapCount <= 8, false)) {
             int insertCount = 0;
             for (int i = low + 1; i < high; i++) {
                 myElement key = arr[i];
@@ -404,7 +404,7 @@ private:
         }
 pdqSortLoop:
         if (highly_unbalanced) {
-            if (--badAllowed == 0) {
+            if (__builtin_expect(--badAllowed == 0, false)) {
                 fprintf(stderr, "PDQ-sort calling heap sort on range [%d, %d)\n", low, high);
                 std::make_heap(arr.begin() + low, arr.begin() + high);
                 std::sort_heap(arr.begin() + low, arr.begin() + high);
@@ -771,28 +771,36 @@ public:
     }
 private:
     void quickSortRecursive(myContainer& arr, int low, int high) {
-        if (high - low <= 1) return;
-        static pivotSelector ps;
-        int p = ps.selectPivot(arr, low, high);
-        myElement pivot = arr[p];
-        int i = low;
-        int j = high - 1;
-
-        while (i <= j) {
-            while (arr[i] < pivot) i++;
-            while (arr[j] > pivot) j--;
-            if (i <= j) {
-                std::swap(arr[i], arr[j]);
-                if (p == i) p = j;
-                else if (p == j) p = i;
-                i++;
-                j--;
+        while (low < high) {
+            if (__builtin_expect(high - low == 1, false)) {
+                if (arr[high] < arr[low]) std::swap(arr[low], arr[high]);
+                return;
+            }
+            static pivotSelector ps;
+            int p = ps.selectPivot(arr, low, high + 1);
+            myElement pivot = arr[p];
+            int i = low;
+            int j = high;
+            while (i <= j) {
+                while (arr[i] < pivot) i++;
+                while (arr[j] > pivot) j--;
+                if (__builtin_expect(i <= j, true)) {
+                    std::swap(arr[i], arr[j]);
+                    if      (p == i) p = j;
+                    else if (p == j) p = i;
+                    i++;
+                    j--;
+                }
+            }
+            if (j - low < high - i) {
+                if (low < j) quickSortRecursive(arr, low, j);
+                low = i;
+            }
+            else {
+                if (i < high) quickSortRecursive(arr, i, high);
+                high = j;
             }
         }
-        if (low < j)
-            quickSortRecursive(arr, low, j);
-        if (i < high)
-            quickSortRecursive(arr, i, high);
     }
 };
 
@@ -804,22 +812,31 @@ public:
     }
 private:
     void quickSortRecursive(myContainer& arr, int low, int high) {
-        if (high - low <= 1) return;
-        static pivotSelector ps;
-        int p = ps.selectPivot(arr, low, high);
-        myElement pivot = arr[p];
-        int i = low;
-        for (int j = low; j < high; j++) {
-            if (arr[j] < pivot) {
-                std::swap(arr[i], arr[j]);
-                i++;
+        while (low < high) {
+            if (__builtin_expect(high - low == 1, false)) {
+                if (arr[high] < arr[low]) std::swap(arr[low], arr[high]);
+                return;
+            }
+            static pivotSelector ps;
+            int p = ps.selectPivot(arr, low, high);
+            myElement pivot = arr[p];
+            int i = low;
+            for (int j = low; j < high; j++) {
+                if (arr[j] < pivot) {
+                    std::swap(arr[i], arr[j]);
+                    i++;
+                }
+            }
+            std::swap(arr[i], arr[high - 1]);
+            if (high - i > i - low) {
+                if (low < i - 1) quickSortRecursive(arr, low, i - 1);
+                low = i + 1;
+            }
+            else {
+                if (i + 1 < high) quickSortRecursive(arr, i + 1, high);
+                high = i - 1;
             }
         }
-        std::swap(arr[i], arr[high - 1]);
-        if (low < i - 1)
-            quickSortRecursive(arr, low, i - 1);
-        if (i + 1 < high)
-            quickSortRecursive(arr, i + 1, high);
     }
 };
 }

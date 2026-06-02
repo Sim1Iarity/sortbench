@@ -2,15 +2,15 @@
 
 class genIndices {
 public:
-    virtual void generate(std::vector<myElement>&, int) = 0;
+    virtual void generate(myElement*, int) = 0;
     virtual ~genIndices() {}
 };
 
 class RandomIndices : public genIndices {
     bool isPowerOf2(int n) { return (n & (-n)) == n; }
 public:
-    void generate(std::vector<myElement>& indices, int n) override {
-        std::mt19937 rng(12345);
+    void generate(myElement* indices, int n) override {
+        std::mt19937 rng(std::random_device{}());
         for (int i = 0; i < n; i++) {
             indices[i] = i;
         }
@@ -35,7 +35,7 @@ public:
 
 class AscendingIndices : public genIndices {
 public:
-    void generate(std::vector<myElement>& indices, int n) override {
+    void generate(myElement* indices, int n) override {
         for (int i = 0; i < n; i++) {
             indices[i] = i;
         }
@@ -44,7 +44,7 @@ public:
 
 class DescendingIndices : public genIndices {
 public:
-    void generate(std::vector<myElement>& indices, int n) override {
+    void generate(myElement* indices, int n) override {
         for (int i = 0; i < n; i++) {
             indices[i] = n - i - 1;
         }
@@ -53,7 +53,7 @@ public:
 
 class PipeOrganIndices : public genIndices {
 public:
-    void generate(std::vector<myElement>& indices, int n) override {
+    void generate(myElement* indices, int n) override {
         for (int i = 0; i < (n >> 1); i++) {
             indices[i] = 2 * i + 1;
         }
@@ -65,17 +65,17 @@ public:
 
 class FinalMergeIndices : public genIndices {
 public:
-    void generate(std::vector<myElement>& indices, int n) override {
+    void generate(myElement* indices, int n) override {
         for (int i = 0; i < n; i++) {
             indices[i] = i;
         }
-        std::swap_ranges(indices.begin(), indices.begin() + (n / 2), indices.begin() + (n / 2));
+        std::swap_ranges(indices, indices + (n / 2), indices + (n / 2));
     }
 };
 
 class FinalMergeReversedIndices : public genIndices {
 public:
-    void generate(std::vector<myElement>& indices, int n) override {
+    void generate(myElement* indices, int n) override {
         for (int i = 0; i < n / 2; i++) {
             indices[i] = n - 2 * i - 1;
         }
@@ -87,17 +87,17 @@ public:
 
 class HeapifiedIndices : public genIndices {
 public:
-    void generate(std::vector<myElement>& indices, int n) override {
+    void generate(myElement* indices, int n) override {
         for (int i = 0; i < n; i++) {
             indices[i] = i;
         }
-        std::make_heap(indices.begin(), indices.end());
+        std::make_heap(indices, indices + n);
     }
 };
 
 class BSTreeIndices : public genIndices {
 public:
-    void generate(std::vector<myElement>& indices, int n) override {
+    void generate(myElement* indices, int n) override {
         auto make_tree = [&](auto&& self, int left, int right, int level) -> void {
             if (left == right) {
                 indices[left] = left * level - 1;
@@ -115,7 +115,7 @@ public:
 
 class SawtoothIndices : public genIndices {
 public:
-    void generate(std::vector<myElement>& indices, int n) override {
+    void generate(myElement* indices, int n) override {
         for (int i = 0; i < n / 4; i++) {
             indices[4 * i] = i;
             indices[4 * i + 1] = i + n / 4;
@@ -127,7 +127,7 @@ public:
 
 class ScrambledTailIndices : public genIndices {
 public:
-    void generate(std::vector<myElement>& indices, int n) override {
+    void generate(myElement* indices, int n) override {
         int curpos = 0;
         for (int i = 0; i < n / 8; i++) {
             for (int j = 0; j < 7; j++) indices[curpos++] = i * 8 + j;
@@ -135,13 +135,13 @@ public:
         for (int i = curpos; i < n; i++) {
             indices[i] = (i - curpos) * 8;
         }
-        std::shuffle(indices.begin() + curpos, indices.end(), std::mt19937(12345));
+        std::shuffle(indices + curpos, indices, std::mt19937(std::random_device{}()));
     }
 };
 
 class ScrambledHeadIndices : public genIndices {
 public:
-    void generate(std::vector<myElement>& indices, int n) override {
+    void generate(myElement* indices, int n) override {
         int curpos = 0;
         for (int i = 0; i < n / 8; i++) {
             for (int j = 0; j < 7; j++) indices[curpos++] = i * 8 + j + 1;
@@ -149,18 +149,18 @@ public:
         for (int i = curpos; i < n; i++) {
             indices[i] = (i - curpos) * 8;
         }
-        std::shuffle(indices.begin() + curpos, indices.end(), std::mt19937(12345));
-        std::swap_ranges(indices.begin() + curpos, indices.end(), indices.begin());
+        std::shuffle(indices + curpos, indices + n, std::mt19937(std::random_device{}()));
+        std::swap_ranges(indices + curpos, indices + n, indices);
     }
 };
 
 class HalfReverseIndices : public genIndices {
 public:
-    void generate(std::vector<myElement>& indices, int n) override {
+    void generate(myElement* indices, int n) override {
         for (int i = 0; i < n; i++) {
             indices[i] = i;
         }
-        std::reverse(indices.begin() + n / 2, indices.end());
+        std::reverse(indices + n / 2, indices + n);
     }
 };
 
@@ -168,7 +168,7 @@ public:
 // https://www.cs.dartmouth.edu/~doug/mdmspe.pdf
 class AdversaryIndices : public genIndices {
 public:
-    void generate(std::vector<myElement>& indices, int n) override {
+    void generate(myElement* indices, int n) override {
         int num = 0;
         std::map<int, std::vector<int> > positions;
         auto lowbit = [=](int x) -> int {
@@ -184,6 +184,7 @@ public:
                 num += 2;
             }
         }
+        for (int i = n / 2; i < n; i++) indices[i] = (i - n / 2) * 2 + 1;
     }
 };
 

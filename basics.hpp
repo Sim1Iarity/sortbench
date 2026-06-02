@@ -9,6 +9,7 @@
 #include <csignal>
 #include <chrono>
 #include <cmath>
+#include <cstring>
 #include <type_traits>
 
 static size_t compareCount = 0;

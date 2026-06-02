@@ -26,13 +26,15 @@ void bench_worker(unsigned int flag, unsigned int flagGen, int n) {
     std::vector<sortAlgo*> algos = flagToAlgo(flag);
     std::vector<std::pair<genIndices*, std::string> > gens = flagToGen(flagGen);
     for (auto [gen, genstr] : gens) {
-        std::vector<myElement> indices(n);
+        myElement* indices = (myElement*)malloc(n * sizeof(myElement));
         gen->generate(indices, n);
         printf("| %d(%s) |", n, genstr.c_str());
+        fflush(stdout);
         for (auto algo : algos) {
             myContainer indices_sorted;
             try {
-                indices_sorted = indices;
+                indices_sorted.resize(n);
+                memcpy(indices_sorted.data(), indices, n * sizeof(myElement));
             } catch (std::bad_alloc& e) {
                 fprintf(stderr, "*** Fatal error: Not enough memory! bailing...\n");
                 exit(1);
@@ -41,9 +43,11 @@ void bench_worker(unsigned int flag, unsigned int flagGen, int n) {
             std::chrono::steady_clock::time_point t = std::chrono::steady_clock::now();
             algo->sort(indices_sorted);
             std::chrono::steady_clock::duration d = std::chrono::steady_clock::now() - t;
-            printf(" $%.3lf\\text{ms}(%llu)$ |", d.count() / 1000000.0, compareCount);
+            printf(" $%.6lf\\text{ms}(%llu)$ |", d.count() / 1000000.0, compareCount);
+            fflush(stdout);
         }
         putchar('\n');
+        free(indices);
     }
 }
 
