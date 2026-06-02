@@ -204,3 +204,20 @@ const std::pair<genIndices*, std::string> generators[] =
     {new HalfReverseIndices(), "half-reversed"},
     {new AdversaryIndices(), "adversary"}
 };
+
+const std::string genNames[] =
+{
+    "rand",
+    "asc",
+    "desc",
+    "pipeorgan",
+    "merge",
+    "mergerev",
+    "heap",
+    "bst",
+    "saw",
+    "randhead",
+    "randtail",
+    "halfrev",
+    "adversary"
+};
