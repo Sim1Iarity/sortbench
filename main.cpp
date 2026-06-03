@@ -67,6 +67,7 @@ void bench(unsigned int flag, unsigned int flagGen, std::vector<int> nArr) {
 }
 
 void print_usage(char* argv[]) {
+    printf("Sortbench - benchmarking sorting algorithms\n");
     printf("Usage: %s [-a algo]... [-g gen]... [-o outputfile] @filename\n", argv[0]);
     printf("   or: %s [-a algo]... [-g gen]... [-o outputfile] ...\n", argv[0]);
     printf("Option [-a algo]... can be replaced with [-a algo1,algo2,...] or [-a=algo1,algo2,...]. Similar for generators.\n");
