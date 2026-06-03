@@ -38,31 +38,25 @@ static const std::string algoDescription[][2] =
 };
 
 namespace nlognalgos {
-class pivotSelection {
+class firstPivot {
 public:
-    virtual int selectPivot(myContainer&, int, int) = 0;
-    virtual ~pivotSelection() {}
-};
-
-class firstPivot : public pivotSelection {
-public:
-    int selectPivot(myContainer&, int low, int) override {
+    static int selectPivot(myContainer&, int low, int) {
         return low;
     }
 };
-class lastPivot : public pivotSelection {
+class lastPivot {
 public:
-    int selectPivot(myContainer&, int, int high) override {
+    static int selectPivot(myContainer&, int, int high) {
         return high - 1;
     }
 };
-class middlePivot : public pivotSelection {
+class middlePivot {
 public:
-    int selectPivot(myContainer&, int low, int high) override {
+    static int selectPivot(myContainer&, int low, int high) {
         return low + (high - low) / 2;
     }
 };
-class medianOfThreePivot : public pivotSelection {
+class medianOfThreePivot {
     static int median3(myContainer& arr, int a, int b, int c) {
         if (arr[a] > arr[b]) std::swap(arr[a], arr[b]);
         if (arr[a] > arr[c]) std::swap(arr[a], arr[c]);
@@ -70,19 +64,19 @@ class medianOfThreePivot : public pivotSelection {
         return b;
     }
 public:
-    int selectPivot(myContainer& arr, int low, int high) override {
+    static int selectPivot(myContainer& arr, int low, int high) {
         int mid = low + (high - low) / 2;
         return median3(arr, low, mid, high - 1);
     }
 };
-class medianOfNinePivot : public pivotSelection {
+class medianOfNinePivot {
     static void sort3(myContainer& arr, int a, int b, int c) {
         if (arr[a] > arr[b]) std::swap(arr[a], arr[b]);
         if (arr[a] > arr[c]) std::swap(arr[a], arr[c]);
         if (arr[b] > arr[c]) std::swap(arr[b], arr[c]);
     }
 public:
-    int selectPivot(myContainer& arr, int begin, int end) override {
+    static int selectPivot(myContainer& arr, int begin, int end) {
         int s2 = (end - begin) / 2;
         sort3(arr, begin, begin + s2, end - 1);
         sort3(arr, begin + 1, begin + (s2 - 1), end - 2);
@@ -91,9 +85,9 @@ public:
         return begin + s2;
     }
 };
-class randomPivot : public pivotSelection {
+class randomPivot {
 public:
-    int selectPivot(myContainer&, int low, int high) override {
+    static int selectPivot(myContainer&, int low, int high) {
         return low + rand() % (high - low - 1);
     }
 };
@@ -247,22 +241,19 @@ public:
 
 class pdqSort : public sortAlgo {
 public:
-
     void sort(myContainer& arr) override {
         int n = arr.size();
         sortRecursive(arr, 0, n, floor(log2(n)));
     }
-
 private:
-    static void insertionSort(myContainer& arr, int left, int right) {
-        for (int i = left + 1; i <= right; i++) {
-            myElement temp = arr[i];
+    static void insertionSort(myContainer& A, int left, int right) {
+        for (int i = left + 1; i <= right; ++i) {
+            myElement key = A[i];
             int j = i - 1;
-            while (j >= left && arr[j] > temp) {
-                arr[j + 1] = arr[j];
+            while (j >= left && A[j] > key) {
+                std::swap(A[j], A[j+1]);
                 j--;
             }
-            arr[j + 1] = temp;
         }
     }
 
@@ -271,13 +262,13 @@ private:
         myContainer rightArr(arr.begin() + m, arr.begin() + r);
         int i = m - 1, j = r - m - 1, k = r - 1;
         while (i >= l && j >= 0) {
-            if (rightArr[j] >= arr[i]) {
+            if (rightArr[j] > arr[i]) {
                 arr[k--] = rightArr[j--];
             } else {
                 arr[k--] = arr[i--];
             }
         }
-        if (j != -1) std::copy_backward(rightArr.begin(), rightArr.begin() + j + 1, arr.begin() + k + 1);
+        while (j >= 0) arr[k--] = rightArr[j--];
     }
 
     static void merge(myContainer& arr, int l, int m, int r) {
@@ -296,31 +287,35 @@ private:
                 arr[k++] = arr[j++];
             }
         }
-        if (i != leftSize) std::copy(leftArr.begin() + i, leftArr.end(), arr.begin() + k);
+        while (i < leftSize) arr[k++] = leftArr[i++];
     }
-    static std::pair<int,int> partition(myContainer& arr, int low, int high) {
-        int swapCount = 0, p;
+    static void partition(int& lt, int& gt, int& swapCount, myContainer& arr, int low, int high) {
+        int p;
         if (__builtin_expect(high - low >= 128, true)) {
-            p = ::nlognalgos::medianOfNinePivot().selectPivot(arr, low, high);
+            p = ::nlognalgos::medianOfNinePivot::selectPivot(arr, low, high);
         }
-        else p = ::nlognalgos::medianOfThreePivot().selectPivot(arr, low, high);
+        else p = ::nlognalgos::medianOfThreePivot::selectPivot(arr, low, high);
         myElement pivot = arr[p];
+        lt = low, gt = high - 1;
         int i = low;
-        int j = high - 1;
-
-        while (i <= j) {
-            while (i <= j && arr[i] <= pivot) i++;
-            while (i <= j && arr[j] >= pivot) j--;
-            if (__builtin_expect(i <= j, true)) {
-                std::swap(arr[i], arr[j]);
+        while (i <= gt) {
+            if (arr[i] < pivot) {
+                if (p == lt) p = i;
+                else if (p == i) p = lt;
+                std::swap(arr[lt], arr[i]);
                 swapCount++;
-                if (p == i) p = j;
-                else if (p == j) p = i;
-                i++;
-                j--;
+                lt++; i++;
             }
+            else if (arr[i] > pivot) {
+                if (p == gt) p = i;
+                else if (p == i) p = gt;
+                std::swap(arr[i], arr[gt]);
+                swapCount++;
+                gt--;
+            }
+            else i++;
         }
-        return {j, swapCount};
+        return;
     }
 
     static int detectRun(myContainer& arr, int start, int n) {
@@ -331,8 +326,13 @@ private:
         } else {
             int end = start + 1;
             while (end + 1 < n && arr[end] >= arr[end + 1]) end++;
-            std::reverse(arr.begin() + start, arr.begin() + end + 1);
-            return end;
+            int ret = end;
+            while (start < end) {
+                std::swap(arr[start], arr[end]);
+                start++;
+                end--;
+            }
+            return ret;
         }
     }
 
@@ -340,8 +340,13 @@ private:
         if (arr[end - 1] >= arr[end]) {
             int pos = end - 1;
             while (pos > start && arr[pos - 1] >= arr[pos]) pos--;
-            std::reverse(arr.begin() + pos, arr.begin() + end + 1);
-            return pos;
+            int ret = pos;
+            while (pos < end) {
+                std::swap(arr[pos], arr[end]);
+                pos++;
+                end--;
+            }
+            return ret;
         }
         else {
             int pos = end - 1;
@@ -350,51 +355,57 @@ private:
         }
     }
 
-    static void sortRecursive(myContainer& arr, int low, int high, int badAllowed) {
-        while (high - low > 32) {
-            int runEnd = detectRun(arr, low, high);
-            if (runEnd >= high - 1) return;
-            int runStart = detectRunBackwards(arr, high - 1, low);
-            if (runStart - runEnd <= 1) {
-                merge(arr, low, runStart, high);
-                return;
+    static void sortRecursive(myContainer& arr, int low, int high, int badAllowed, int flag = 4) {
+        while (high - low > 24) {
+            if (flag && high - low > 128) {
+                int runEnd = detectRun(arr, low, high);
+                if (runEnd >= high - 1) return;
+                int threshold = 31 - __builtin_clz(high - low);
+                if (flag >= 2) {
+                    int runStart = detectRunBackwards(arr, high - 1, low);
+                    if (runStart - runEnd <= 1) {
+                        merge(arr, low, runStart, high);
+                        return;
+                    }
+                    if (runEnd >= low + 16 * threshold && runStart <= high - 16 * threshold) {
+                        sortRecursive(arr, runEnd + 1, runStart, badAllowed);
+                        merge(arr, low, runEnd + 1, runStart);
+                        merge(arr, low, runStart, high);
+                        return;
+                    }
+                    else if (runEnd >= low + 16 * threshold) {
+                        sortRecursive(arr, runEnd + 1, high, badAllowed);
+                        merge(arr, low, runEnd + 1, high);
+                        return;
+                    }
+                    else if (runStart <= high - 16 * threshold) {
+                        sortRecursive(arr, low, runStart, badAllowed);
+                        merge(arr, low, runStart, high);
+                        return;
+                    }
+                    if (runEnd <= low + threshold && runStart >= high - threshold) flag--;
+                }
+                else if (runEnd <= low + threshold) flag--;
             }
-            if (runEnd >= low + (high - low) / 4 && runStart <= high - (high - low) / 4) {
-                sortRecursive(arr, runEnd + 1, runStart, badAllowed);
-                merge(arr, low, runEnd + 1, runStart);
-                merge(arr, low, runStart, high);
-                return;
-            }
-            else if (runEnd >= low + (high - low) / 4) {
-                sortRecursive(arr, runEnd + 1, high, badAllowed);
-                merge(arr, low, runEnd + 1, high);
-                return;
-            }
-            else if (runStart <= high - (high - low) / 4) {
-                sortRecursive(arr, low, runStart, badAllowed);
-                merge(arr, low, runStart, high);
-                return;
-            }
-            int pi, swapCount;
-            std::tie(pi, swapCount) = partition(arr, low, high);
-            int l_size = pi - low;
-            int r_size = high - pi - 1;
+            int pi_left, pi_right, swapCount = 0;
+            partition(pi_left, pi_right, swapCount, arr, low, high);
+            int l_size = pi_left - low + 1;
+            int r_size = high - pi_right;
             bool highly_unbalanced = l_size < r_size / 8 || r_size < l_size / 8;
-            if (__builtin_expect(swapCount <= 8, false)) {
-                int insertCount = 0;
+            if (__builtin_expect(swapCount <= 16 && l_size > 32 && r_size > 32, false)) {
+                int insertCount = 0, insertLimit = swapCount * 2;
                 for (int i = low + 1; i < high; i++) {
                     myElement key = arr[i];
                     int j = i - 1;
                     while (j >= low && arr[j] > key) {
-                        arr[j + 1] = arr[j];
+                        std::swap(arr[j+1], arr[j]);
                         j--;
                         insertCount++;
-                        if (insertCount > 48) break;
+                        if (insertCount > insertLimit) break;
                     }
-                    arr[j + 1] = key;
-                    if (insertCount > 48) break;
+                    if (insertCount > insertLimit) break;
                 }
-                if (insertCount > 48) goto pdqSortLoop;
+                if (insertCount > insertLimit) goto pdqSortLoop;
                 return;
             }
 pdqSortLoop:
@@ -405,34 +416,34 @@ pdqSortLoop:
                     std::sort_heap(arr.begin() + low, arr.begin() + high);
                     return;
                 }
-                if (l_size > 32) {
+                if (l_size > 24) {
                     std::swap(arr[low], arr[low + l_size / 4]);
-                    std::swap(arr[pi - 1], arr[pi - l_size / 4]);
+                    std::swap(arr[pi_left - 1], arr[pi_left - l_size / 4]);
                     if (l_size > 128) {
                         std::swap(arr[low + 1], arr[low + l_size / 4 + 1]);
                         std::swap(arr[low + 2], arr[low + l_size / 4 + 2]);
-                        std::swap(arr[pi - 2], arr[pi - l_size / 4 - 1]);
-                        std::swap(arr[pi - 3], arr[pi - l_size / 4 - 2]);
+                        std::swap(arr[pi_left - 2], arr[pi_left - l_size / 4 - 1]);
+                        std::swap(arr[pi_left - 3], arr[pi_left - l_size / 4 - 2]);
                     }
                 }
-                if (r_size > 32) {
-                    std::swap(arr[pi + 1], arr[pi + r_size / 4 + 1]);
+                if (r_size > 24) {
+                    std::swap(arr[pi_right + 1], arr[pi_right + r_size / 4 + 1]);
                     std::swap(arr[high - 1], arr[high - r_size / 4]);
                     if (r_size > 128) {
-                        std::swap(arr[pi + 2], arr[pi + r_size / 4 + 2]);
-                        std::swap(arr[pi + 3], arr[pi + r_size / 4 + 3]);
+                        std::swap(arr[pi_right + 2], arr[pi_right + r_size / 4 + 2]);
+                        std::swap(arr[pi_right + 3], arr[pi_right + r_size / 4 + 3]);
                         std::swap(arr[high - 2], arr[high - r_size / 4 - 1]);
                         std::swap(arr[high - 3], arr[high - r_size / 4 - 2]);
                     }
                 }
             }
-            if (high - pi - 1 > pi + 1 - low) {
-                sortRecursive(arr, low, pi + 1, badAllowed);
-                low = pi + 1;
+            if (r_size > l_size) {
+                sortRecursive(arr, low, pi_left + 1, badAllowed, flag);
+                low = pi_right;
             }
             else {
-                sortRecursive(arr, pi + 1, high, badAllowed);
-                high = pi + 1;
+                sortRecursive(arr, pi_right, high, badAllowed, flag);
+                high = pi_left + 1;
             }
         }
         insertionSort(arr, low, high - 1);

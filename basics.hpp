@@ -19,23 +19,23 @@ class myElement {
     int value;
 public:
     myElement(int v = 0) : value(v) {}
-    bool operator<(const myElement& other) const {
+    bool operator<(const myElement& other) const noexcept {
         compareCount++;
         return value < other.value;
     }
-    bool operator<=(const myElement& other) const {
+    bool operator<=(const myElement& other) const noexcept {
         compareCount++;
         return value <= other.value;
     }
-    bool operator>(const myElement& other) const {
+    bool operator>(const myElement& other) const noexcept {
         compareCount++;
         return value > other.value;
     }
-    bool operator>=(const myElement& other) const {
+    bool operator>=(const myElement& other) const noexcept {
         compareCount++;
         return value >= other.value;
     }
-    bool operator==(const myElement& other) const {
+    bool operator==(const myElement& other) const noexcept {
         compareCount++;
         return value == other.value;
     }
