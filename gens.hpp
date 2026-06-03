@@ -128,9 +128,12 @@ public:
 class ScrambledTailIndices : public genIndices {
 public:
     void generate(myElement* indices, int n) override {
-        int curpos = 0;
-        for (int i = 0; i < n / 8; i++) {
-            for (int j = 1; j <= 7; j++) indices[curpos++] = i * 8 + j;
+        int curpos = 0, curnum = 1;
+        while (true) {
+            if (curnum % 8 == 0) curnum++;
+            if (curnum >= n) break;
+            indices[curpos++] = curnum;
+            curnum++;
         }
         for (int i = curpos; i < n; i++) {
             indices[i] = (i - curpos) * 8;
@@ -142,15 +145,18 @@ public:
 class ScrambledHeadIndices : public genIndices {
 public:
     void generate(myElement* indices, int n) override {
-        int curpos = 0;
-        for (int i = 0; i < n / 8; i++) {
-            for (int j = 1; j <= 7; j++) indices[curpos++] = i * 8 + j;
+        int curpos = 0, curnum = 1;
+        while (true) {
+            if (curnum % 8 == 0) curnum++;
+            if (curnum >= n) break;
+            indices[curpos++] = curnum;
+            curnum++;
         }
         for (int i = curpos; i < n; i++) {
             indices[i] = (i - curpos) * 8;
         }
         std::shuffle(indices + curpos, indices + n, std::mt19937(std::random_device{}()));
-        std::swap_ranges(indices + curpos, indices + n, indices);
+        std::rotate(indices, indices + curpos, indices + n);
     }
 };
 
