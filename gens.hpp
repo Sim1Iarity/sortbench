@@ -116,12 +116,14 @@ public:
 class SawtoothIndices : public genIndices {
 public:
     void generate(myElement* indices, int n) override {
-        for (int i = 0; i < n / 4; i++) {
-            indices[4 * i] = i;
-            indices[4 * i + 1] = i + n / 4;
-            indices[4 * i + 2] = i + n / 2;
-            indices[4 * i + 3] = i + 3 * n / 4;
+        int new_n = (n / 4) * 4;
+        for (int i = 0; i < new_n / 4; i++) {
+            indices[i] = 4 * i;
+            indices[i + new_n / 4] = 4 * i + 1;
+            indices[i + new_n / 2] = 4 * i + 2;
+            indices[i + 3 * new_n / 4] = 4 * i + 3;
         }
+        for (int i = new_n; i < n; i++) indices[i] = i;
     }
 };
 
