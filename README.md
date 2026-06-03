@@ -85,3 +85,16 @@ In any other column, the number in the bracket means the comparison the sorting 
 |randtail|Scrambled tail|
 |halfrev|$[0,n/2)$ ascending followed by $[n/2,n)$ descending|
 |adversary|[M.D. Mcilroy's adversarial array](https://www.cs.dartmouth.edu/~doug/mdmspe.pdf)|
+
+## Contribution
+Anyone is free to contribute, but remember to use pull requests and wait for my approval instead of directly pushing onto the branch.
+### Coding guideline
+Apart from a few exceptions listed below, the code in this repository mainly follows the LLVM style formatting with 4 spaces for indentation.
+* Opening braces (`{`) must be in the same line with the last closing parenthesis (`)`).
+    * They should have one space in between when no keywords are between them.
+* Only use `auto` when you are declaring a Lambda expression, an iterator or the variable of a range-based for-loop. Otherwise specify which types you are using.
+* No `decltype` is allowed.
+* Existing code uses lower camel case for historical reasons. New code may use either lower camel case or PascalCase for class names, but should be consistent within a single file.
+* Write self-documenting code instead of comments. Class names and function names should explain everything clearly.
+### Use of AI
+AI-generated code is **prohibited**, but their warnings and tips are welcome. If you use AI, you must specify the parts of the workflow AI participated in. **If I think a commit contains AI-generated code, I will require you to close them.**
