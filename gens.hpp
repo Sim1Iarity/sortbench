@@ -6,11 +6,31 @@ public:
     virtual ~genIndices() {}
 };
 
+class RandomNumberGenerator {
+    unsigned int state;
+public:
+    typedef unsigned int result_type;
+    constexpr RandomNumberGenerator(const RandomNumberGenerator&) = default;
+    constexpr RandomNumberGenerator(RandomNumberGenerator&&) = default;
+    constexpr RandomNumberGenerator(unsigned int s) : state(s ? s : 1812433253U) {}
+    constexpr RandomNumberGenerator& operator=(const RandomNumberGenerator&) = default;
+    constexpr RandomNumberGenerator& operator=(RandomNumberGenerator&&) = default;
+    constexpr void seed(unsigned int s) { state = s ? s : 1812433253U; }
+    static constexpr unsigned int min() { return 1u; }
+    static constexpr unsigned int max() { return ~0u; }
+    constexpr unsigned int operator()() {
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        return state;
+    }
+};
+
 class RandomIndices : public genIndices {
     bool isPowerOf2(int n) { return (n & (-n)) == n; }
 public:
     void generate(myElement* indices, int n) override {
-        std::mt19937 rng(std::random_device{}());
+        RandomNumberGenerator rng(std::random_device{}());
         for (int i = 0; i < n; i++) {
             indices[i] = i;
         }
@@ -140,7 +160,7 @@ public:
         for (int i = curpos; i < n; i++) {
             indices[i] = (i - curpos) * 8;
         }
-        std::shuffle(indices + curpos, indices + n, std::mt19937(std::random_device{}()));
+        std::shuffle(indices + curpos, indices + n, RandomNumberGenerator(std::random_device{}()));
     }
 };
 
@@ -168,7 +188,13 @@ public:
         for (int i = 0; i < n; i++) {
             indices[i] = i;
         }
-        std::reverse(indices + n / 2, indices + n);
+        size_t i = 4, j = n - 1;
+        while (i < j) {
+            std::swap(indices[i], indices[j]);
+            i += 2;
+            j -= 2;
+        }
+        std::swap(indices[0], indices[n - 1]);
     }
 };
 
