@@ -137,5 +137,23 @@ public:
     inline void resize(size_t n) { m_array.resize(n); }
 };
 
-//using myContainer = std::vector<myElement>;
+class RandomNumberGenerator {
+    unsigned int state;
+public:
+    typedef unsigned int result_type;
+    constexpr RandomNumberGenerator(const RandomNumberGenerator&) = default;
+    constexpr RandomNumberGenerator(RandomNumberGenerator&&) = default;
+    constexpr RandomNumberGenerator(unsigned int s) : state(s ? s : 1812433253U) {}
+    constexpr RandomNumberGenerator& operator=(const RandomNumberGenerator&) = default;
+    constexpr RandomNumberGenerator& operator=(RandomNumberGenerator&&) = default;
+    constexpr void seed(unsigned int s) { state = s ? s : 1812433253U; }
+    static constexpr unsigned int min() { return 1u; }
+    static constexpr unsigned int max() { return ~0u; }
+    constexpr unsigned int operator()() {
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        return state;
+    }
+};
 #endif

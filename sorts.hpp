@@ -88,7 +88,8 @@ public:
 class randomPivot {
 public:
     static int selectPivot(myContainer&, int low, int high) {
-        return low + rand() % (high - low - 1);
+        static RandomNumberGenerator rng(std::random_device{}());
+        return low + rng() % (high - low - 1);
     }
 };
 }
