@@ -33,17 +33,16 @@ void bench_worker(unsigned int flag, unsigned int flagGen, int n) {
         for (auto algo : algos) {
             myContainer indices_sorted;
             try {
-                indices_sorted.resize(n);
-                memcpy(indices_sorted.data(), indices, n * sizeof(myElement));
+                indices_sorted = myContainer(indices, indices + n);
             } catch (std::bad_alloc& e) {
                 fprintf(stderr, "*** Fatal error: Not enough memory! bailing...\n");
                 exit(1);
             }
-            compareCount = 0;
+            compareCount = accessCount = 0;
             std::chrono::steady_clock::time_point t = std::chrono::steady_clock::now();
             algo->sort(indices_sorted);
             std::chrono::steady_clock::duration d = std::chrono::steady_clock::now() - t;
-            printf(" $%.6lf\\text{ms}(%" PRIu64 ")$ |", d.count() / 1000000.0, compareCount);
+            printf(" $%.6lf\\text{ms}(%" PRIu64 ",%" PRIu64 ")$ |", d.count() / 1000000.0, compareCount, accessCount);
             fflush(stdout);
         }
         putchar('\n');

@@ -32,12 +32,12 @@ For example, the following command could produce this table:
 ```
 | data size | PDQ-sort |
 |:-:|:-:|
-| 500000(adversary) | $18.943201\text{ms}(5845329)$ |
-| 5000000(adversary) | $145.318708\text{ms}(65258398)$ |
+| 500000(adversary) | $10.823793\text{ms}(5687907,15193940)$ |
+| 5000000(adversary) | $111.505526\text{ms}(59719667,158217256)$ |
 
 In the first column, the number outside the bracket is array length, and the text inside the bracket refers to the array generation method.
 
-In any other column, the number in the bracket means the comparison the sorting algorithm used.
+In any other column, the numbers in the bracket means the comparison and the array access count the sorting algorithm used.
 
 ## Algorithms & Generators
 |Acronym (used in command lines)|Description|Time complexity|
