@@ -32,8 +32,8 @@ For example, the following command could produce this table:
 ```
 | data size | PDQ-sort |
 |:-:|:-:|
-| 500000(adversary) | $10.823793\text{ms}(5687907,15193940)$ |
-| 5000000(adversary) | $111.505526\text{ms}(59719667,158217256)$ |
+| 500000(adversary) | $12.589474\text{ms}(6230477,17187767)$ |
+| 5000000(adversary) | $97.140569\text{ms}(74523469,190760965)$ |
 
 In the first column, the number outside the bracket is array length, and the text inside the bracket refers to the array generation method.
 
