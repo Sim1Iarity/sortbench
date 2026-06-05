@@ -320,22 +320,114 @@ private:
         }
         return;
     }
+    // modified from orlp/pdqsort
+    static void swapOffsets(myContainer& arr, int base_l, int base_r,
+                        uint8_t* offsets_l, uint8_t* offsets_r,
+                        int num, bool use_swaps) {
+        if (use_swaps) {
+            for (int i = 0; i < num; i++)
+                std::swap(arr[base_l + offsets_l[i]], arr[base_r - offsets_r[i]]);
+        }
+        else if (num > 0) {
+            int l = base_l + offsets_l[0];
+            int r = base_r - offsets_r[0];
+            myElement tmp(std::move(arr[l])); arr[l] = std::move(arr[r]);
+            for (int i = 1; i < num; i++) {
+                l = base_l + offsets_l[i]; arr[r] = std::move(arr[l]);
+                r = base_r - offsets_r[i]; arr[l] = std::move(arr[r]);
+            }
+            arr[r] = std::move(tmp);
+        }
+    }
     static int partition2(int& swapCount, myContainer& arr, int low, int high, bool use_med9) {
+        static constexpr unsigned CACHELINE = 64, BLOCK = 64;
         int p;
-        if (__builtin_expect(use_med9, false)) {
+        if (__builtin_expect(use_med9, false))
             p = ::nlognalgos::medianOfNinePivot::selectPivot(arr, low, high);
-        }
-        else p = ::nlognalgos::medianOfThreePivot::selectPivot(arr, low, high);
-        myElement pivot = arr[p];
-        while (true) {
-            while (arr[low] < pivot) low++;
-            --high;
-            while (arr[high] > pivot) high--;
-            if (low >= high) return low;
-            std::swap(arr[low], arr[high]);
+        else
+            p = ::nlognalgos::medianOfThreePivot::selectPivot(arr, low, high);
+        std::swap(arr[low], arr[p]);
+        myElement pivot = arr[low];
+        int first = low + 1;
+        int last  = high;
+        while (arr[first] < pivot) first++;
+        if (first - 1 == low) while (first < last && !(arr[--last] < pivot));
+        else while (!(arr[--last] < pivot));
+        bool already_partitioned = (first >= last);
+        if (!already_partitioned) {
+            std::swap(arr[first], arr[last]);
             swapCount++;
-            ++low;
+            first++;
+            alignas(CACHELINE) uint8_t offL_store[BLOCK];
+            alignas(CACHELINE) uint8_t offR_store[BLOCK];
+            uint8_t* offL = offL_store;
+            uint8_t* offR = offR_store;
+            int baseL = first;
+            int baseR = last;
+            int numL = 0, numR = 0, startL = 0, startR = 0;
+            while (first < last) {
+                int unknown = last - first;
+                int leftSplit  = (numL == 0) ? (numR == 0 ? unknown / 2 : unknown) : 0;
+                int rightSplit = (numR == 0) ? (unknown - leftSplit) : 0;
+                if (leftSplit >= BLOCK) {
+                    for (int i = 0; i < BLOCK; ) {
+                        offL[numL] = i++; numL += !(arr[first] < pivot); first++;
+                        offL[numL] = i++; numL += !(arr[first] < pivot); first++;
+                        offL[numL] = i++; numL += !(arr[first] < pivot); first++;
+                        offL[numL] = i++; numL += !(arr[first] < pivot); first++;
+                        offL[numL] = i++; numL += !(arr[first] < pivot); first++;
+                        offL[numL] = i++; numL += !(arr[first] < pivot); first++;
+                        offL[numL] = i++; numL += !(arr[first] < pivot); first++;
+                        offL[numL] = i++; numL += !(arr[first] < pivot); first++;
+                    }
+                }
+                else {
+                    for (int i = 0; i < leftSplit; ) {
+                        offL[numL] = i++; numL += !(arr[first] < pivot); first++;
+                    }
+                }
+                if (rightSplit >= BLOCK) {
+                    for (int i = 0; i < BLOCK; ) {
+                        offR[numR] = ++i; numR += (arr[--last] < pivot);
+                        offR[numR] = ++i; numR += (arr[--last] < pivot);
+                        offR[numR] = ++i; numR += (arr[--last] < pivot);
+                        offR[numR] = ++i; numR += (arr[--last] < pivot);
+                        offR[numR] = ++i; numR += (arr[--last] < pivot);
+                        offR[numR] = ++i; numR += (arr[--last] < pivot);
+                        offR[numR] = ++i; numR += (arr[--last] < pivot);
+                        offR[numR] = ++i; numR += (arr[--last] < pivot);
+                    }
+                }
+                else {
+                    for (int i = 0; i < rightSplit; ) {
+                        offR[numR] = ++i; numR += (arr[--last] < pivot);
+                    }
+                }
+                int swaps = std::min(numL, numR);
+                swapOffsets(arr, baseL, baseR,
+                            offL + startL, offR + startR,
+                            swaps, numL == numR);
+                swapCount += swaps;
+                numL -= swaps; numR -= swaps;
+                startL += swaps; startR += swaps;
+                if (numL == 0) { startL = 0; baseL = first; }
+                if (numR == 0) { startR = 0; baseR = last;  }
+            }
+            if (numL) {
+                uint8_t* ol = offL + startL;
+                while (numL--) std::swap(arr[baseL + ol[numL]], arr[--last]);
+                first = last;
+            }
+            if (numR) {
+                uint8_t* or_ = offR + startR;
+                while (numR--) std::swap(arr[baseR - or_[numR]], arr[first++]);
+                last = first;
+            }
         }
+        int pivotPos = first - 1;
+        arr[low]      = arr[pivotPos];
+        arr[pivotPos] = pivot;
+        return pivotPos;
     }
 
     static int detectRun(myContainer& arr, int start, int n) {
@@ -415,8 +507,8 @@ private:
                 }
                 else {
                     int pi = partition2(swapCount, arr, low, high, use_med9);
-                    pi_left = pi - 1;
-                    pi_right = pi;
+                    pi_left = pi;
+                    pi_right = pi + 1;
                     if (arr[low] == arr[pi] || arr[high - 1] == arr[pi]) use_dnf = true;
                 }
             }
@@ -425,7 +517,7 @@ private:
                 pi_left = pi - 1;
                 pi_right = pi;
             }
-            int l_size = pi_left - low + 1;
+            int l_size = pi_left - low;
             int r_size = high - pi_right;
             bool highly_unbalanced = l_size < r_size / 8 || r_size < l_size / 8;
             swapCount = std::min<int>(swapCount, high - low - swapCount);
