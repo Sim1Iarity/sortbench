@@ -474,24 +474,25 @@ private:
                 int runEnd = detectRun(arr, low, high);
                 if (runEnd >= high - 1) return;
                 if (runEnd <= low + threshold) flag--;
+                int mergeThreshold = (high - low) / 4;
                 if (flag) {
                     int runStart = detectRunBackwards(arr, high - 1, low);
                     if (runStart - runEnd <= 1) {
                         merge(arr, low, runStart, high);
                         return;
                     }
-                    if (runEnd >= low + 16 * threshold && runStart <= high - 16 * threshold) {
+                    if (runEnd >= low + mergeThreshold / 2 && runStart <= high - mergeThreshold / 2) {
                         sortRecursive(arr, runEnd + 1, runStart, badAllowed);
                         merge(arr, low, runEnd + 1, runStart);
                         merge(arr, low, runStart, high);
                         return;
                     }
-                    else if (runEnd >= low + 16 * threshold) {
+                    else if (runEnd >= low + mergeThreshold) {
                         sortRecursive(arr, runEnd + 1, high, badAllowed);
                         merge(arr, low, runEnd + 1, high);
                         return;
                     }
-                    else if (runStart <= high - 16 * threshold) {
+                    else if (runStart <= high - mergeThreshold) {
                         sortRecursive(arr, low, runStart, badAllowed);
                         merge(arr, low, runStart, high);
                         return;
