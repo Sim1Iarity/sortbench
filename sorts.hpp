@@ -112,7 +112,6 @@ public:
 }
 
 namespace hybridalgos {
-
 class timSort : public sortAlgo {
     static void mergeBackwards(myContainer& arr, int l, int m, int r) {
         myContainer rightArr(arr.begin() + m, arr.begin() + r);
@@ -148,7 +147,6 @@ public:
     void sort(myContainer& indices) override {
         int n = indices.size();
         std::vector<std::pair<int, int>> runStack;
-        int minRun = n / (1 << (int)std::log2(n / 32));
         auto detectRun = [&](int start) -> int {
             if (start + 1 >= n) return start;
             if (indices[start] <=  indices[start + 1]) {
@@ -177,6 +175,11 @@ public:
                 indices[j + 1] = temp;
             }
         };
+        if (n <= 32) {
+            insertionSort(0, indices.size() - 1);
+            return;
+        }
+        int minRun = n / (1 << (int)std::log2(n / 32));
         for (int i = 0; i < n;) {
             int runEnd = detectRun(i);
             int runLength = runEnd - i + 1;
@@ -193,7 +196,6 @@ public:
             while (true) {
                 bool conditionSatisfied = true;
                 int m = runStack.size();
-
                 if (m >= 3) {
                     auto &A = runStack[m - 3];
                     auto &B = runStack[m - 2];
@@ -226,7 +228,6 @@ public:
                         continue;
                     }
                 }
-
                 if (conditionSatisfied) break;
             }
         }
@@ -260,7 +261,6 @@ private:
             A[j + 1] = key;
         }
     }
-
     static void mergeBackwards(myContainer& arr, int l, int m, int r) {
         if (m == l || m == r) return;
         myContainer rightArr(arr.begin() + m, arr.begin() + r);
@@ -274,7 +274,6 @@ private:
         }
         while (j >= 0) arr[k--] = rightArr[j--];
     }
-
     static void merge(myContainer& arr, int l, int m, int r) {
         if (m == l || m == r) return;
         if (r - m < m - l) {
@@ -709,31 +708,33 @@ public:
         mergeSortRecursive(indices, 0, indices.size());
     }
 private:
-    void mergeSortRecursive(myContainer& arr, int left, int right) {
-        if (right - left <= 1) return;
-        int mid = left + (right - left) / 2;
-        mergeSortRecursive(arr, left, mid);
-        mergeSortRecursive(arr, mid, right);
-        merge(arr, left, mid, right);
-    }
-    static void merge(myContainer& arr, int l, int m, int r) {
-        myContainer leftArr(arr.begin() + l, arr.begin() + m);
-        int i = 0, j = m, k = l;
-        int leftSize = leftArr.size();
-
-        while (i < leftSize && j < r) {
-            if (leftArr[i] <= arr[j]) {
-                arr[k++] = leftArr[i++];
-            } else {
-                arr[k++] = arr[j++];
+    static void insertionSort(myContainer& A, int left, int right) {
+        for (int i = left + 1; i <= right; ++i) {
+            myElement key = A[i];
+            int j = i - 1;
+            while (j >= left && A[j] > key) {
+                A[j + 1] = A[j];
+                j--;
             }
+            A[j + 1] = key;
         }
-        while (i < leftSize) {
-            arr[k++] = leftArr[i++];
+    }
+    void mergeSortRecursive(myContainer& arr, int left, int right) {
+        if (right - left <= 4) {
+            insertionSort(arr, left, right - 1);
+            return;
         }
-        while (j < r) {
-            arr[k++] = arr[j++];
-        }
+        int mid = left + (right - left) / 2;
+        int midl = left + (mid - left) / 2;
+        int midr = mid + (right - mid) / 2;
+        mergeSortRecursive(arr, left, midl);
+        mergeSortRecursive(arr, midl, mid);
+        mergeSortRecursive(arr, mid, midr);
+        mergeSortRecursive(arr, midr, right);
+        myContainer buf1(mid - left), buf2(right - mid);
+        std::merge(arr.begin() + left, arr.begin() + midl, arr.begin() + midl, arr.begin() + mid, buf1.begin());
+        std::merge(arr.begin() + mid, arr.begin() + midr, arr.begin() + midr, arr.begin() + right, buf2.begin());
+        std::merge(buf1.begin(), buf1.end(), buf2.begin(), buf2.end(), arr.begin() + left);
     }
 };
 

@@ -114,6 +114,7 @@ public:
     typedef ptrdiff_t difference_type;
     typedef std::vector<myElement>::allocator_type allocator_type;
     inline myContainer() = default;
+    inline myContainer(size_t size) : m_array(size) {}
     inline myContainer(const myContainer& rhs) : m_array(rhs.m_array) { accessCount += rhs.m_array.size(); }
     inline myContainer(myContainer&& rhs) : m_array(rhs.m_array) { accessCount += rhs.m_array.size(); }
     inline myContainer(myIterator begin, myIterator end) : m_array(begin.m_it, end.m_it) { accessCount += end - begin; }
