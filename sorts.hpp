@@ -340,7 +340,7 @@ private:
         }
     }
     static int partition2(int& swapCount, myContainer& arr, int low, int high, bool use_med9) {
-        static constexpr unsigned CACHELINE = 64, BLOCK = 64;
+        static constexpr int CACHELINE = 64, BLOCK = 64;
         int p;
         if (__builtin_expect(use_med9, false))
             p = ::nlognalgos::medianOfNinePivot::selectPivot(arr, low, high);
