@@ -88,7 +88,7 @@ int find_index(bool is_gen, std::string opt) {
         if (ret == 15) return -1;
         return ret;
     }
-    for (int i = 0; i < 20; i++) if (algoDescription[i][0] == opt) return i;
+    for (int i = 0; i < 28; i++) if (algoDescription[i][0] == opt) return i;
     return -1;
 }
 
