@@ -72,7 +72,7 @@ void print_usage(char* argv[]) {
     printf("Option [-a algo]... can be replaced with [-a algo1,algo2,...] or [-a=algo1,algo2,...]. Similar for generators.\n");
     printf("-a can be replaced by --algo; -g can be replaced by --gen\n");
     printf("Valid options for algo: \n");
-    for (int i = 0; i < 27; i++) {
+    for (int i = 0; i < 28; i++) {
         printf("\t%s: %s\n", algoDescription[i][0].c_str(), algoDescription[i][1].c_str());
     }
     printf("Valid options for gen: \n");

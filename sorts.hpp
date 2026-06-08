@@ -11,6 +11,7 @@ static const std::string algoDescription[][2] =
     {"stlsort", "std::sort"},
     {"stlstable", "std::stable_sort"},
     {"tim", "Timsort"},
+    {"pdqdnf", "PDQ-sort (DNF enabled)"},
     {"pdq", "PDQ-sort"},
     {"insertion", "Insertion sort"},
     {"selection", "Selection sort"},
@@ -541,7 +542,6 @@ private:
 pdqSortLoop:
             if (highly_unbalanced) {
                 if (__builtin_expect(--badAllowed == 0, false)) {
-                    fprintf(stderr, "PDQ-sort calling heap sort on range [%d, %d)\n", low, high);
                     std::make_heap(arr.begin() + low, arr.begin() + high);
                     std::sort_heap(arr.begin() + low, arr.begin() + high);
                     return;
@@ -991,6 +991,7 @@ static sortAlgo* const sortalgos[] =
     new stlalgos::STLSort(),
     new stlalgos::STLStableSort(),
     new hybridalgos::timSort(),
+    new hybridalgos::pdqSort<true>(),
     new hybridalgos::pdqSort<false>(),
     new nsquaredalgos::insertionSort(),
     new nsquaredalgos::selectionSort(),
