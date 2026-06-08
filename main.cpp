@@ -76,7 +76,7 @@ void print_usage(char* argv[]) {
         printf("\t%s: %s\n", algoDescription[i][0].c_str(), algoDescription[i][1].c_str());
     }
     printf("Valid options for gen: \n");
-    for (int i = 0; i < 13; i++) {
+    for (int i = 0; i < 15; i++) {
         printf("\t%s: %s\n", genNames[i].c_str(), generators[i].second.c_str());
     }
 }
@@ -84,8 +84,8 @@ void print_usage(char* argv[]) {
 int find_index(bool is_gen, std::string opt) {
     for (char& c : opt) c = tolower(c);
     if (is_gen) {
-        int ret = std::find(genNames, genNames + 13, opt) - genNames;
-        if (ret == 13) return -1;
+        int ret = std::find(genNames, genNames + 15, opt) - genNames;
+        if (ret == 15) return -1;
         return ret;
     }
     for (int i = 0; i < 20; i++) if (algoDescription[i][0] == opt) return i;
